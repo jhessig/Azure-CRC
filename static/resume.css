@@ -1,36 +1,36 @@
-.flex-container {
-    font-family: sans-serif;
-    scroll-snap-type: y mandatory;
-    overflow-y: scroll;
-    height: 100vh;
-}
-.cert img {
-    width: 150px;
-}
-section {
-    height: 100vh;
-    display: flex;
-    flex-wrap: wrap;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    scroll-snap-align: center;
+body {
+    text-align: center;
+    --bs-body-bg: #383B53;
+    --bs-body-color: #D4D6B9;
+    --bs-link-color: #D1CAA1;
+    font-family: 'Lato', sans-serif;
 }
 
-.who {
-    background: #2D4356;
+.container {
+    width: 100%;
+    margin-right: auto;
+    margin-left: auto;
+
+}
+.cert img {
+    width: 125px;
+}
+.row {
+    padding-top: 10px;
+}
+.sidebar {
+
 }
 
 .intro {
-    background: #2D4356;
+
 }
 
 .experience {
-    background: #2D4356;
+
 }
 
 .education {
-    background: #2D4356;
+
 }
 
