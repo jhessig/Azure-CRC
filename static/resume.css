@@ -12,6 +12,9 @@ body {
     margin-left: auto;
 
 }
+.cert {
+    text-align: center;
+}
 .cert img {
     width: 125px;
 }
@@ -23,7 +26,7 @@ body {
 }
 
 .intro {
-
+    text-align: center;
 }
 
 .experience {
@@ -31,6 +34,10 @@ body {
 }
 
 .education {
-
+    text-align: center;
 }
 
+.other-links {
+    text-align: center;
+    font-size: 2.5em;
+}
