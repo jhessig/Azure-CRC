@@ -13,7 +13,7 @@ terraform {
 }
 
 resource "random_string" "storage_id" {
-  length = 14
+  length = 10
   upper   = false
   special = false
 }
@@ -23,12 +23,15 @@ provider "azurerm" {
 }
 
 resource "azurerm_resource_group" "rg" {
-  name     = "crcrg"
+  name     = "${var.resource_group_name}-${var.env_tag}-rg"
   location = "eastus"
+  tags = {
+    environment = var.env_tag
+  }
 }
 
 resource "azurerm_dns_zone" "zone" {
-  name                = "hessig.cloud"
+  name                = var.domain_name
   resource_group_name = azurerm_resource_group.rg.name
 }
 
@@ -49,7 +52,7 @@ resource "azurerm_storage_account" "storage" {
   account_replication_type = "LRS"
   account_tier             = "Standard"
   location                 = azurerm_resource_group.rg.location
-  name                     = "crcstorage${random_string.storage_id.result}"
+  name                     = "${var.resource_group_name}storage${random_string.storage_id.result}"
   resource_group_name      = azurerm_resource_group.rg.name
   static_website {
     index_document = "index.html"
@@ -69,7 +72,7 @@ resource "azurerm_storage_blob" "blob" {
 
 resource "azurerm_cdn_profile" "cdn_profile" {
   location            = azurerm_resource_group.rg.location
-  name                = "crc-cdn-profile"
+  name                = "${var.resource_group_name}-cdn-profile"
   resource_group_name = azurerm_resource_group.rg.name
   sku                 = "Standard_Microsoft"
 }
@@ -82,7 +85,7 @@ resource "azurerm_cdn_endpoint" "cdn_endpoint" {
   origin_host_header = azurerm_storage_account.storage.primary_web_host
   origin {
     host_name = azurerm_storage_account.storage.primary_web_host
-    name      = "crc-cdn-origin"
+    name      = "${var.resource_group_name}-cdn-origin"
   }
   optimization_type = "GeneralWebDelivery"
 }
