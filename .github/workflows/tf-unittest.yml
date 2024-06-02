@@ -1,10 +1,12 @@
-name: Terraform CI
+name: Terraform Unit Test
 on:
   push:
+    branches-ignore:
+      - 'master'
 
 jobs:
   terraform:
-    name: "Terraform CI"
+    name: "Terraform Unit Test"
     runs-on: ubuntu-latest
 
     steps:

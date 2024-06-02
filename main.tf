@@ -1,6 +1,6 @@
 terraform {
   backend "azurerm" {
-    key = "github.terraform.tfstate"
+    key = "github.terraform.tfstate-${var.resource_group_name}-${var.env_tag}"
   }
   required_providers {
     azurerm = {
@@ -34,17 +34,9 @@ resource "azurerm_resource_group" "rg" {
 }
 
 resource "azurerm_dns_zone" "zone" {
-  name                = var.domain_name
+  name                = "${var.sld_name}.${var.tld_name}"
   resource_group_name = azurerm_resource_group.rg.name
 }
-
-# resource "azurerm_dns_a_record" "a_record" {
-#   name                = "www"
-#   zone_name           = azurerm_dns_zone.zone.name
-#   resource_group_name = azurerm_resource_group.rg.name
-#   ttl                 = 300
-#   records             = ["x.x.x.x"]
-# }
 
 output "name_servers" {
   description = "The nameservers for the DNS zone"
@@ -75,20 +67,20 @@ resource "azurerm_storage_blob" "blob" {
 
 resource "azurerm_cdn_profile" "cdn_profile" {
   location            = azurerm_resource_group.rg.location
-  name                = "${var.resource_group_name}-cdn-profile"
+  name                = "${var.resource_group_name}-cdn-profile-${var.env_tag}"
   resource_group_name = azurerm_resource_group.rg.name
   sku                 = "Standard_Microsoft"
 }
 
 resource "azurerm_cdn_endpoint" "cdn_endpoint" {
   location            = azurerm_resource_group.rg.location
-  name                = "hessig-crc"
+  name                = "${var.sld_name}-${var.tld_name}-${var.resource_group_name}-${var.env_tag}"
   profile_name        = azurerm_cdn_profile.cdn_profile.name
   resource_group_name = azurerm_resource_group.rg.name
   origin_host_header  = azurerm_storage_account.storage.primary_web_host
   origin {
     host_name = azurerm_storage_account.storage.primary_web_host
-    name      = "${var.resource_group_name}-cdn-origin"
+    name      = "${var.resource_group_name}-${var.env_tag}-cdn-origin"
   }
   optimization_type = "GeneralWebDelivery"
 }

@@ -1,5 +1,9 @@
-variable "domain_name" {
-  default = "hessig.cloud"
+variable "tld_name" {
+  default = "cloud"
+}
+
+variable "sld_name" {
+  default = "hessig"
 }
 
 variable "resource_group_name" {
@@ -7,5 +11,5 @@ variable "resource_group_name" {
 }
 
 variable "env_tag" {
-  default = "dev"
+  default = "prod"
 }
