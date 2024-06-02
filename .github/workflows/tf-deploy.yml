@@ -28,7 +28,7 @@ jobs:
         uses: hashicorp/setup-terraform@v1
 
       - name: 'Terraform Initialize'
-        run: terraform init -backend-config="storage_account_name=$STORAGE_ACCOUNT" -backend-config="container_name=$CONTAINER_NAME" -backend-config="resource_group_name=$RESOURCE_GROUP -backend-config="key=github-prod.terraform.tfstate"
+        run: terraform init -backend-config="storage_account_name=$STORAGE_ACCOUNT" -backend-config="container_name=$CONTAINER_NAME" -backend-config="resource_group_name=$RESOURCE_GROUP" -backend-config="key=github-prod.terraform.tfstate"
 
       #- name: Terraform Format
       #  run: terraform fmt -check
