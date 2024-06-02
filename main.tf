@@ -8,7 +8,7 @@ terraform {
       version = "~> 3.0.2"
     }
     random = {
-      source = "hashicorp/random"
+      source  = "hashicorp/random"
       version = "3.4.3"
     }
   }
@@ -16,7 +16,7 @@ terraform {
 }
 
 resource "random_string" "storage_id" {
-  length = 10
+  length  = 10
   upper   = false
   special = false
 }
@@ -58,19 +58,19 @@ resource "azurerm_storage_account" "storage" {
   name                     = "${var.resource_group_name}storage${random_string.storage_id.result}"
   resource_group_name      = azurerm_resource_group.rg.name
   static_website {
-    index_document = "index.html"
+    index_document     = "index.html"
     error_404_document = "404.html"
   }
 }
 
 resource "azurerm_storage_blob" "blob" {
-  for_each = fileset("${path.root}/static/", "**/*" )
+  for_each               = fileset("${path.root}/static/", "**/*")
   name                   = trimprefix(each.key, "static/")
   storage_account_name   = azurerm_storage_account.storage.name
   storage_container_name = "$web"
   type                   = "Block"
-  content_type = (length(regexall(".*\\.html$", each.key)) > 0 ? "text/html" : "application/octet-stream")
-  source = "${path.root}/static/${each.key}"
+  content_type           = (length(regexall(".*\\.html$", each.key)) > 0 ? "text/html" : "application/octet-stream")
+  source                 = "${path.root}/static/${each.key}"
 }
 
 resource "azurerm_cdn_profile" "cdn_profile" {
@@ -85,7 +85,7 @@ resource "azurerm_cdn_endpoint" "cdn_endpoint" {
   name                = "hessig-crc"
   profile_name        = azurerm_cdn_profile.cdn_profile.name
   resource_group_name = azurerm_resource_group.rg.name
-  origin_host_header = azurerm_storage_account.storage.primary_web_host
+  origin_host_header  = azurerm_storage_account.storage.primary_web_host
   origin {
     host_name = azurerm_storage_account.storage.primary_web_host
     name      = "${var.resource_group_name}-cdn-origin"
