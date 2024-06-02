@@ -1,6 +1,6 @@
 terraform {
   backend "azurerm" {
-    key = "github.terraform.tfstate-${var.resource_group_name}-${var.env_tag}"
+    key = "github.terraform.tfstate.${var.resource_group_name}-${var.env_tag}"
   }
   required_providers {
     azurerm = {
