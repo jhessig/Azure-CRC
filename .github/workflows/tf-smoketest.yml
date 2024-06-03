@@ -45,6 +45,9 @@ jobs:
       - name: "Terraform Apply"
         run: terraform apply -auto-approve -input=false
 
+      - name: "Install Package Lock Only"
+        run: npm install --package-lock-only
+
       - name: "Install dependencies"
         run: npm ci
 
