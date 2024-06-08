@@ -91,6 +91,14 @@ resource "azurerm_dns_cname_record" "cname" {
   record              = azurerm_cdn_endpoint.cdn_endpoint.fqdn
 }
 
+resource "azurerm_dns_a_record" "a_root" {
+  name                = "@"
+  zone_name           = azurerm_dns_zone.zone.name
+  resource_group_name = azurerm_resource_group.rg.name
+  ttl                 = 300
+  record              = azurerm_cdn_endpoint.cdn_endpoint.fqdn
+}
+
 resource "azurerm_cdn_endpoint_custom_domain" "www" {
   count           = var.env_tag == "prod" ? 1 : 0
   name            = "www-domain"
