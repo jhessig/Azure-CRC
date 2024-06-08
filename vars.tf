@@ -11,5 +11,5 @@ variable "resource_group_name" {
 }
 
 variable "env_tag" { #change this before merging into test or prod.
-  default = "test"
+  default = "prod"
 }
