@@ -83,12 +83,15 @@ resource "azurerm_cdn_endpoint" "cdn_endpoint" {
   optimization_type = "GeneralWebDelivery"
 }
 
-
 resource "azurerm_dns_cname_record" "cname" {
   name                = "www"
   zone_name           = azurerm_dns_zone.zone.name
   resource_group_name = azurerm_resource_group.rg.name
   ttl                 = 300
   record              = azurerm_cdn_endpoint.cdn_endpoint.fqdn
+}
+
+output "storage_url" {
+  value = "https://${azurerm_storage_account.storage.primary_web_host}"
 }
 

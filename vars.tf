@@ -11,5 +11,5 @@ variable "resource_group_name" {
 }
 
 variable "env_tag" {
-  default = "prod"
+  default = "test"
 }
