@@ -91,6 +91,20 @@ resource "azurerm_dns_cname_record" "cname" {
   record              = azurerm_cdn_endpoint.cdn_endpoint.fqdn
 }
 
+resource "azurerm_cdn_endpoint_custom_domain" "www" {
+  count = var.env_tag == "prod" ? 1 : 0
+  name = "www-domain"
+  host_name = "www.${var.sld_name}.${var.tld_name}"
+  cdn_endpoint_id = azurerm_cdn_endpoint.cdn_endpoint.id
+}
+
+resource "azurerm_cdn_endpoint_custom_domain" "root" {
+  count = var.env_tag == "prod" ? 1 : 0
+  name                = "root-domain"
+  host_name           = "${var.sld_name}.${var.tld_name}"
+  cdn_endpoint_id     = azurerm_cdn_endpoint.cdn_endpoint.id
+}
+
 output "storage_url" {
   value = "https://${azurerm_storage_account.storage.primary_web_host}"
 }
