@@ -109,3 +109,6 @@ output "storage_url" {
   value = "https://${azurerm_storage_account.storage.primary_web_host}"
 }
 
+output "env_tag" {
+  value = var.env_tag
+}

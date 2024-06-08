@@ -52,14 +52,15 @@ jobs:
       - name: "Inspect Terraform Output"
         run: terraform output storage_url
 
-#      - name: "Get CDN URL from Terraform"
-#        id: tf_output
-#        run: echo "::set-output name=cdn_url::$(terraform output -raw storage_url)"
-
       - name: "Set CDN URL as env var"
         run: |
           OUTPUT=$(terraform output -raw storage_url)
           echo "SITE_URL=$OUTPUT" >> $GITHUB_ENV
+
+      - name: "Set environment tag"
+        run: |
+          OUTPUT=$(terraform output -raw env_tag)
+          echo "ENV_TAG=$OUTPUT" >> $GITHUB_ENV
 
       - name: "Install Package Lock Only"
         run: npm install --package-lock-only
@@ -82,4 +83,5 @@ jobs:
           retention-days: 30
 
       - name: "Terraform Destroy"
+        if: ${{ env.ENV_TAG == 'prod' }}
         run: terraform destroy -auto-approve
