@@ -96,7 +96,7 @@ resource "azurerm_dns_a_record" "a_root" {
   zone_name           = azurerm_dns_zone.zone.name
   resource_group_name = azurerm_resource_group.rg.name
   ttl                 = 300
-  record              = azurerm_cdn_endpoint.cdn_endpoint.fqdn
+  target_resource_id  = azurerm_cdn_endpoint.cdn_endpoint.id
 }
 
 resource "azurerm_cdn_endpoint_custom_domain" "www" {
