@@ -83,14 +83,6 @@ resource "azurerm_cdn_endpoint" "cdn_endpoint" {
   optimization_type = "GeneralWebDelivery"
 }
 
-resource "azurerm_dns_cname_record" "cname" {
-  name                = "www"
-  zone_name           = azurerm_dns_zone.zone.name
-  resource_group_name = azurerm_resource_group.rg.name
-  ttl                 = 300
-  record              = azurerm_cdn_endpoint.cdn_endpoint.fqdn
-}
-
 resource "azurerm_dns_a_record" "a_root" {
   name                = "@"
   zone_name           = azurerm_dns_zone.zone.name
@@ -99,12 +91,32 @@ resource "azurerm_dns_a_record" "a_root" {
   target_resource_id  = azurerm_cdn_endpoint.cdn_endpoint.id
 }
 
+resource "azurerm_dns_cname_record" "www-cname" {
+  name                = "www"
+  zone_name           = azurerm_dns_zone.zone.name
+  resource_group_name = azurerm_resource_group.rg.name
+  ttl                 = 300
+  record              = azurerm_cdn_endpoint.cdn_endpoint.fqdn
+}
+
+resource "azurerm_dns_cname_record" "cdn-cname" {
+  name                = "cdnverify"
+  resource_group_name = azurerm_resource_group.rg.name
+  ttl                 = 300
+  zone_name           = azurerm_dns_zone.zone.name
+  record              = "cdnverify.${azurerm_cdn_endpoint.cdn_endpoint.fqdn}"
+}
+
 resource "azurerm_cdn_endpoint_custom_domain" "www" {
   count           = var.env_tag == "prod" ? 1 : 0
   name            = "www-domain"
   host_name       = "www.${var.sld_name}.${var.tld_name}"
   cdn_endpoint_id = azurerm_cdn_endpoint.cdn_endpoint.id
-  depends_on      = [azurerm_dns_cname_record.cname]
+  cdn_managed_https {
+    certificate_type = "Shared"
+    protocol_type    = "ServerNameIndication"
+  }
+  depends_on = [azurerm_dns_cname_record.www-cname]
 }
 
 resource "azurerm_cdn_endpoint_custom_domain" "root" {
@@ -112,7 +124,7 @@ resource "azurerm_cdn_endpoint_custom_domain" "root" {
   name            = "root-domain"
   host_name       = "${var.sld_name}.${var.tld_name}"
   cdn_endpoint_id = azurerm_cdn_endpoint.cdn_endpoint.id
-  depends_on      = [azurerm_dns_a_record.a_root]
+  depends_on      = [azurerm_dns_cname_record.cdn-cname]
 }
 
 output "storage_url" {
