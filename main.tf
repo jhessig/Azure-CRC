@@ -113,7 +113,7 @@ resource "azurerm_cdn_endpoint_custom_domain" "www" {
   host_name       = "www.${var.sld_name}.${var.tld_name}"
   cdn_endpoint_id = azurerm_cdn_endpoint.cdn_endpoint.id
   cdn_managed_https {
-    certificate_type = "Shared"
+    certificate_type = "Dedicated"
     protocol_type    = "ServerNameIndication"
   }
   depends_on = [azurerm_dns_cname_record.www-cname]
