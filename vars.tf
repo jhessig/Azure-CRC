@@ -10,6 +10,6 @@ variable "resource_group_name" {
   default = "crc"
 }
 
-variable "env_tag" { #change this before merging into test or prod.
-  default = "prod"
+variable "env_tag" {
+  description = "Environment variable pass by Github Workflow"
 }

@@ -8,6 +8,8 @@ jobs:
   terraform:
     name: "Terraform Unit Test"
     runs-on: ubuntu-latest
+    env:
+      env_tag: "dev"
 
     steps:
       - name: "Checkout"
