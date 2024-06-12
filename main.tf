@@ -42,14 +42,25 @@ output "name_servers" {
 }
 
 resource "azurerm_storage_account" "storage" {
-  account_replication_type = "LRS"
-  account_tier             = "Standard"
-  location                 = azurerm_resource_group.rg.location
-  name                     = "${var.resource_group_name}storage${random_string.storage_id.result}"
-  resource_group_name      = azurerm_resource_group.rg.name
+  account_replication_type  = "LRS"
+  account_tier              = "Standard"
+  location                  = azurerm_resource_group.rg.location
+  name                      = "${var.resource_group_name}storage${random_string.storage_id.result}"
+  resource_group_name       = azurerm_resource_group.rg.name
+  min_tls_version           = "TLS1_2"
+  shared_access_key_enabled = false
   static_website {
     index_document     = "index.html"
     error_404_document = "404.html"
+  }
+  queue_properties {
+    logging {
+      delete                = true
+      read                  = true
+      write                 = true
+      version               = "1.0"
+      retention_policy_days = 10
+    }
   }
 }
 
@@ -76,6 +87,7 @@ resource "azurerm_cdn_endpoint" "cdn_endpoint" {
   profile_name        = azurerm_cdn_profile.cdn_profile.name
   resource_group_name = azurerm_resource_group.rg.name
   origin_host_header  = azurerm_storage_account.storage.primary_web_host
+  is_http_allowed     = false
   origin {
     host_name = azurerm_storage_account.storage.primary_web_host
     name      = "${var.resource_group_name}-${var.env_tag}-cdn-origin"

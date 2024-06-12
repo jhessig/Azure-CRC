@@ -84,5 +84,4 @@ jobs:
           retention-days: 30
 
       - name: "Terraform Destroy"
-        if: ${{ env.ENV_TAG == 'prod' }}
         run: terraform destroy -auto-approve
