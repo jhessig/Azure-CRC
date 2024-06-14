@@ -85,4 +85,4 @@ jobs:
 
       - name: "Terraform Destroy"
         if: always()
-        run: terraform destroy -auto-approve
+        run: terraform destroy -var="env_tag=${{ 'test' }}" -auto-approve
