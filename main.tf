@@ -46,8 +46,8 @@ resource "azurerm_storage_account" "storage" {
   #checkov:skip=CKV2_AZURE_33:The storage account is a public static content host.
   #checkov:skip=CKV2_AZURE_40:The storage account is a public static content host.
   #checkov:skip=CKV2_AZURE_47:The storage account is a public static content host.
-  #checkov:skip=CKV2_AZURE_59:The storage account is a public static content host.
-  #checkov:skip=CKV2_AZURE_190:The storage account is a public static content host.
+  #checkov:skip=CKV_AZURE_59:The storage account is a public static content host.
+  #checkov:skip=CKV_AZURE_190:The storage account is a public static content host.
   account_replication_type = "LRS"
   account_tier             = "Standard"
   location                 = azurerm_resource_group.rg.location
