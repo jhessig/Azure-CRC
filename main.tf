@@ -42,13 +42,18 @@ output "name_servers" {
 }
 
 resource "azurerm_storage_account" "storage" {
-  account_replication_type  = "LRS"
-  account_tier              = "Standard"
-  location                  = azurerm_resource_group.rg.location
-  name                      = "${var.resource_group_name}storage${random_string.storage_id.result}"
-  resource_group_name       = azurerm_resource_group.rg.name
-  min_tls_version           = "TLS1_2"
-  shared_access_key_enabled = false
+  #checkov:skip=CKV2_AZURE_1:The storage account is a public static content host.
+  #checkov:skip=CKV2_AZURE_33:The storage account is a public static content host.
+  #checkov:skip=CKV2_AZURE_40:The storage account is a public static content host.
+  #checkov:skip=CKV2_AZURE_47:The storage account is a public static content host.
+  #checkov:skip=CKV2_AZURE_59:The storage account is a public static content host.
+  #checkov:skip=CKV2_AZURE_190:The storage account is a public static content host.
+  account_replication_type = "LRS"
+  account_tier             = "Standard"
+  location                 = azurerm_resource_group.rg.location
+  name                     = "${var.resource_group_name}storage${random_string.storage_id.result}"
+  resource_group_name      = azurerm_resource_group.rg.name
+  min_tls_version          = "TLS1_2"
   static_website {
     index_document     = "index.html"
     error_404_document = "404.html"
