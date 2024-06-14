@@ -49,7 +49,7 @@ resource "azurerm_storage_account" "storage" {
   #checkov:skip=CKV2_AZURE_47:The storage account is a public static content host.
   #checkov:skip=CKV_AZURE_59:The storage account is a public static content host.
   #checkov:skip=CKV_AZURE_190:The storage account is a public static content host.
-  account_replication_type = "LRS"
+  account_replication_type = "GRS"
   account_tier             = "Standard"
   location                 = azurerm_resource_group.rg.location
   name                     = "${var.resource_group_name}storage${random_string.storage_id.result}"
@@ -58,6 +58,11 @@ resource "azurerm_storage_account" "storage" {
   static_website {
     index_document     = "index.html"
     error_404_document = "404.html"
+  }
+  blob_properties {
+    delete_retention_policy {
+      days = 7
+    }
   }
   queue_properties {
     logging {
