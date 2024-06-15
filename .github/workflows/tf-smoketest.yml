@@ -83,6 +83,6 @@ jobs:
 #          path: playwright-report/
 #          retention-days: 30
 
-      - name: "Terraform Destroy"
-        if: always()
-        run: terraform destroy -var="env_tag=${{ 'test' }}" -auto-approve
+#      - name: "Terraform Destroy"
+#        if: always()
+#        run: terraform destroy -var="env_tag=${{ 'test' }}" -auto-approve
