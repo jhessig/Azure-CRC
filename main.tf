@@ -216,21 +216,14 @@ resource "azurerm_service_plan" "service_plan" {
   sku_name            = "Y1"
 }
 
-resource "azurerm_function_app" "function_app" {
-  name                       = "${var.resource_group_name}-${var.env_tag}-azure-function"
-  location                   = azurerm_resource_group.api_rg.location
+resource "azurerm_linux_function_app" "example" {
+  name                       = "example-linux-function-app"
   resource_group_name        = azurerm_resource_group.api_rg.name
-  app_service_plan_id        = azurerm_service_plan.service_plan.id
+  location                   = azurerm_resource_group.api_rg.location
   storage_account_name       = azurerm_storage_account.api_storage.name
   storage_account_access_key = azurerm_storage_account.api_storage.primary_access_key
-  os_type                    = "linux"
-  version                    = "~4"
-  #   app_settings {
-  #     FUNCTIONS_WORKER_RUNTIME = "python"
-  #   }
-  site_config {
-    linux_fx_version = "python|3.11"
-  }
+  service_plan_id            = azurerm_service_plan.service_plan.id
+  site_config {}
 }
 
 ### Set CDN custom domains.
