@@ -234,9 +234,9 @@ resource "azurerm_function_app" "function_app" {
   storage_account_access_key = azurerm_storage_account.api_storage.primary_access_key
   os_type                    = "linux"
   version                    = "~4"
-  app_settings {
-    FUNCTIONS_WORKER_RUNTIME = "python"
-  }
+  #   app_settings {
+  #     FUNCTIONS_WORKER_RUNTIME = "python"
+  #   }
   site_config {
     linux_fx_version = "python|3.11"
   }
