@@ -216,8 +216,8 @@ resource "azurerm_service_plan" "service_plan" {
   sku_name            = "Y1"
 }
 
-resource "azurerm_linux_function_app" "example" {
-  name                       = "example-linux-function-app"
+resource "azurerm_linux_function_app" "linux_function-app" {
+  name                       = "${var.resource_group_name}function${random_string.storage_id}"
   resource_group_name        = azurerm_resource_group.api_rg.name
   location                   = azurerm_resource_group.api_rg.location
   storage_account_name       = azurerm_storage_account.api_storage.name
