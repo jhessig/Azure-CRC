@@ -23,6 +23,7 @@ provider "azurerm" {
   features {}
 }
 
+### Set up front end.
 resource "azurerm_resource_group" "rg" {
   name     = "${var.resource_group_name}-${var.env_tag}-rg"
   location = "eastus"
@@ -142,6 +143,37 @@ resource "azurerm_dns_cname_record" "cdn-cname" {
   record              = "cdnverify.${azurerm_cdn_endpoint.cdn_endpoint.fqdn}"
 }
 
+### Set up API.
+resource "azurerm_resource_group" "api-rg" {
+  name     = "${var.resource_group_name}-${var.env_tag}-api-rg"
+  location = "eastus"
+  tags = {
+    environment = var.env_tag
+  }
+}
+
+resource "azurerm_cosmosdb_account" "cosmosdb" {
+  location            = azurerm_resource_group.api-rg.location
+  name                = "${var.resource_group_name}-cosmos-${var.env_tag}-${random_string.storage_id.result}"
+  offer_type          = "Standard"
+  resource_group_name = azurerm_resource_group.api-rg.name
+  kind                = "GlobalDocumentDB"
+  consistency_policy {
+    consistency_level = "Session"
+  }
+  capabilities {
+    name = "EnableServerless"
+  }
+  capabilities {
+    name = "EnableTable"
+  }
+  geo_location {
+    failover_priority = 0
+    location          = azurerm_resource_group.rg.location
+  }
+}
+
+### Set CDN custom domains.
 resource "azurerm_cdn_endpoint_custom_domain" "www" {
   count           = var.env_tag == "prod" ? 1 : 0
   name            = "www-domain"
