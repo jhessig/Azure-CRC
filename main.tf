@@ -153,11 +153,14 @@ resource "azurerm_resource_group" "api_rg" {
 }
 
 resource "azurerm_cosmosdb_account" "cosmosdb" {
-  location            = azurerm_resource_group.api_rg.location
-  name                = "${var.resource_group_name}-cosmos-${var.env_tag}-${random_string.storage_id.result}"
-  offer_type          = "Standard"
-  resource_group_name = azurerm_resource_group.api_rg.name
-  kind                = "GlobalDocumentDB"
+  location                           = azurerm_resource_group.api_rg.location
+  name                               = "${var.resource_group_name}-cosmos-${var.env_tag}-${random_string.storage_id.result}"
+  offer_type                         = "Standard"
+  resource_group_name                = azurerm_resource_group.api_rg.name
+  kind                               = "GlobalDocumentDB"
+  local_authentication_disabled      = true
+  public_network_access_enabled      = false
+  access_key_metadata_writes_enabled = false
   consistency_policy {
     consistency_level = "Session"
   }
@@ -174,12 +177,14 @@ resource "azurerm_cosmosdb_account" "cosmosdb" {
 }
 
 resource "azurerm_storage_account" "api_storage" {
-  account_replication_type = "GRS"
-  account_tier             = "Standard"
-  location                 = azurerm_resource_group.api_rg.location
-  name                     = "${var.resource_group_name}apistorage${random_string.storage_id.result}"
-  resource_group_name      = azurerm_resource_group.api_rg.name
-  min_tls_version          = "TLS1_2"
+  account_replication_type        = "GRS"
+  account_tier                    = "Standard"
+  location                        = azurerm_resource_group.api_rg.location
+  name                            = "${var.resource_group_name}apistorage${random_string.storage_id.result}"
+  resource_group_name             = azurerm_resource_group.api_rg.name
+  min_tls_version                 = "TLS1_2"
+  allow_nested_items_to_be_public = false
+  public_network_access_enabled   = false
   blob_properties {
     delete_retention_policy {
       days = 7
@@ -209,11 +214,14 @@ resource "azurerm_storage_account" "api_storage" {
 }
 
 resource "azurerm_service_plan" "service_plan" {
-  name                = "azure-functions-${var.resource_group_name}-${var.env_tag}"
-  resource_group_name = azurerm_resource_group.api_rg.name
-  location            = azurerm_resource_group.api_rg.location
-  os_type             = "Linux"
-  sku_name            = "Y1"
+  name                   = "azure-functions-${var.resource_group_name}-${var.env_tag}"
+  resource_group_name    = azurerm_resource_group.api_rg.name
+  location               = azurerm_resource_group.api_rg.location
+  os_type                = "Linux"
+  sku_name               = "Y1"
+  https_only             = true
+  zone_balancing_enabled = true
+  worker_count           = 2
 }
 
 resource "azurerm_linux_function_app" "linux_function-app" {
