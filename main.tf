@@ -37,11 +37,6 @@ resource "azurerm_dns_zone" "zone" {
   resource_group_name = azurerm_resource_group.rg.name
 }
 
-output "name_servers" {
-  description = "The nameservers for the DNS zone"
-  value       = azurerm_dns_zone.zone.name_servers
-}
-
 resource "azurerm_storage_account" "storage" {
   #checkov:skip=CKV2_AZURE_1:The storage account is a public static content host.
   #checkov:skip=CKV2_AZURE_33:The storage account is a public static content host.
@@ -179,6 +174,7 @@ resource "azurerm_cosmosdb_account" "cosmosdb" {
 
 resource "azurerm_storage_account" "api_storage" {
   #checkov:skip=CKV2_AZURE_1:Accepting default key management.
+  #checkov:skip=CKV2_AZURE_33:Delaying private endpoint setup.
   account_replication_type        = "GRS"
   account_tier                    = "Standard"
   location                        = azurerm_resource_group.api_rg.location
@@ -268,7 +264,8 @@ resource "azurerm_cdn_endpoint_custom_domain" "root" {
 }
 
 output "storage_url" {
-  value = "https://${azurerm_storage_account.storage.primary_web_host}"
+  value     = "https://${azurerm_storage_account.storage.primary_web_host}"
+  sensitive = true
 }
 
 output "env_tag" {
