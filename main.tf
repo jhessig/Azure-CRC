@@ -225,7 +225,7 @@ resource "azurerm_linux_function_app" "linux_function-app" {
   service_plan_id            = azurerm_service_plan.service_plan.id
   site_config {
     application_stack {
-      python_version = "3.11"
+      python_version = "3.9"
     }
   }
 }
