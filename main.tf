@@ -153,6 +153,7 @@ resource "azurerm_resource_group" "api_rg" {
 }
 
 resource "azurerm_cosmosdb_account" "cosmosdb" {
+  #checkov:skip=CKV_AZURE_100:Accepting default key management.
   location                           = azurerm_resource_group.api_rg.location
   name                               = "${var.resource_group_name}-cosmos-${var.env_tag}-${random_string.storage_id.result}"
   offer_type                         = "Standard"
@@ -177,6 +178,7 @@ resource "azurerm_cosmosdb_account" "cosmosdb" {
 }
 
 resource "azurerm_storage_account" "api_storage" {
+  #checkov:skip=CKV2_AZURE_1:Accepting default key management.
   account_replication_type        = "GRS"
   account_tier                    = "Standard"
   location                        = azurerm_resource_group.api_rg.location
@@ -229,13 +231,14 @@ resource "azurerm_service_plan" "service_plan" {
 }
 
 resource "azurerm_linux_function_app" "linux_function-app" {
-  name                       = "${var.resource_group_name}function${random_string.storage_id.result}"
-  resource_group_name        = azurerm_resource_group.api_rg.name
-  location                   = azurerm_resource_group.api_rg.location
-  storage_account_name       = azurerm_storage_account.api_storage.name
-  storage_account_access_key = azurerm_storage_account.api_storage.primary_access_key
-  service_plan_id            = azurerm_service_plan.service_plan.id
-  https_only                 = true
+  name                          = "${var.resource_group_name}function${random_string.storage_id.result}"
+  resource_group_name           = azurerm_resource_group.api_rg.name
+  location                      = azurerm_resource_group.api_rg.location
+  storage_account_name          = azurerm_storage_account.api_storage.name
+  storage_account_access_key    = azurerm_storage_account.api_storage.primary_access_key
+  service_plan_id               = azurerm_service_plan.service_plan.id
+  https_only                    = true
+  public_network_access_enabled = false
   site_config {
     application_stack {
       python_version = "3.9"
