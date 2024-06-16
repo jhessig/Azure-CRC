@@ -219,7 +219,6 @@ resource "azurerm_service_plan" "service_plan" {
   location               = azurerm_resource_group.api_rg.location
   os_type                = "Linux"
   sku_name               = "Y1"
-  https_only             = true
   zone_balancing_enabled = true
   worker_count           = 2
 }
