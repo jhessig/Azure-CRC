@@ -223,7 +223,11 @@ resource "azurerm_linux_function_app" "linux_function-app" {
   storage_account_name       = azurerm_storage_account.api_storage.name
   storage_account_access_key = azurerm_storage_account.api_storage.primary_access_key
   service_plan_id            = azurerm_service_plan.service_plan.id
-  site_config {}
+  site_config {
+    application_stack {
+      python_version = "3.11"
+    }
+  }
 }
 
 ### Set CDN custom domains.
