@@ -149,6 +149,7 @@ resource "azurerm_resource_group" "api_rg" {
 
 resource "azurerm_cosmosdb_account" "cosmosdb" {
   #checkov:skip=CKV_AZURE_100:Accepting default key management.
+  #checkov:skip=CKV_AZURE_140:Local authentication can only be disabled when using the SQL API.
   location                           = azurerm_resource_group.api_rg.location
   name                               = "${var.resource_group_name}-cosmos-${var.env_tag}-${random_string.storage_id.result}"
   offer_type                         = "Standard"
