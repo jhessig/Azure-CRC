@@ -154,7 +154,6 @@ resource "azurerm_cosmosdb_account" "cosmosdb" {
   offer_type                         = "Standard"
   resource_group_name                = azurerm_resource_group.api_rg.name
   kind                               = "GlobalDocumentDB"
-  local_authentication_disabled      = true
   public_network_access_enabled      = false
   access_key_metadata_writes_enabled = false
   consistency_policy {
