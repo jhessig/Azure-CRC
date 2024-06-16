@@ -185,10 +185,15 @@ resource "azurerm_storage_account" "api_storage" {
   min_tls_version                 = "TLS1_2"
   allow_nested_items_to_be_public = false
   public_network_access_enabled   = false
+  shared_access_key_enabled       = false
   blob_properties {
     delete_retention_policy {
       days = 7
     }
+  }
+  sas_policy {
+    expiration_period = "90.00:00:00"
+    expiration_action = "Log"
   }
   queue_properties {
     logging {
@@ -230,6 +235,7 @@ resource "azurerm_linux_function_app" "linux_function-app" {
   storage_account_name       = azurerm_storage_account.api_storage.name
   storage_account_access_key = azurerm_storage_account.api_storage.primary_access_key
   service_plan_id            = azurerm_service_plan.service_plan.id
+  https_only                 = true
   site_config {
     application_stack {
       python_version = "3.9"
