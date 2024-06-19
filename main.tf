@@ -184,6 +184,7 @@ resource "azurerm_storage_account" "api_storage" {
   min_tls_version                 = "TLS1_2"
   allow_nested_items_to_be_public = false
   public_network_access_enabled   = false
+  shared_access_key_enabled       = true
   blob_properties {
     delete_retention_policy {
       days = 7
@@ -218,6 +219,7 @@ resource "azurerm_storage_account" "api_storage" {
 
 resource "azurerm_service_plan" "service_plan" {
   #checkov:skip=CKV_AZURE_212:Scaling requires support request.
+  #checkov:skip=CKV_AZURE_225:Zone redundancy requires premium account.
   name                = "azure-functions-${var.resource_group_name}-${var.env_tag}"
   resource_group_name = azurerm_resource_group.api_rg.name
   location            = azurerm_resource_group.api_rg.location
