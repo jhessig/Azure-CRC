@@ -48,7 +48,7 @@ resource "azurerm_storage_account" "storage" {
   account_replication_type = "GRS"
   account_tier             = "Standard"
   location                 = azurerm_resource_group.rg.location
-  name                     = "${var.resource_group_name}-storage-${random_string.build_id.result}"
+  name                     = "${var.resource_group_name}storage${random_string.build_id.result}"
   resource_group_name      = azurerm_resource_group.rg.name
   min_tls_version          = "TLS1_2"
   static_website {
@@ -179,7 +179,7 @@ resource "azurerm_storage_account" "api_storage" {
   account_replication_type        = "GRS"
   account_tier                    = "Standard"
   location                        = azurerm_resource_group.api_rg.location
-  name                            = "${var.resource_group_name}-apistorage-${random_string.build_id.result}"
+  name                            = "${var.resource_group_name}apistorage${random_string.build_id.result}"
   resource_group_name             = azurerm_resource_group.api_rg.name
   min_tls_version                 = "TLS1_2"
   allow_nested_items_to_be_public = false
