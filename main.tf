@@ -95,14 +95,14 @@ resource "azurerm_storage_blob" "blob" {
 
 resource "azurerm_cdn_profile" "cdn_profile" {
   location            = azurerm_resource_group.rg.location
-  name                = "${var.resource_group_name}-cdn-profile-${var.env_tag}"
+  name                = "${var.resource_group_name}-${var.env_tag}-cdnpf-${random_string.build_id.result}"
   resource_group_name = azurerm_resource_group.rg.name
   sku                 = "Standard_Microsoft"
 }
 
 resource "azurerm_cdn_endpoint" "cdn_endpoint" {
   location            = azurerm_resource_group.rg.location
-  name                = "${var.resource_group_name}-${var.env_tag}-cdn-${random_string.build_id.result}"
+  name                = "${var.resource_group_name}-${var.env_tag}-cdnep-${random_string.build_id.result}"
   profile_name        = azurerm_cdn_profile.cdn_profile.name
   resource_group_name = azurerm_resource_group.rg.name
   origin_host_header  = azurerm_storage_account.storage.primary_web_host
@@ -140,7 +140,7 @@ resource "azurerm_dns_cname_record" "cdn_cname" {
 
 ### Set up API.
 resource "azurerm_resource_group" "api_rg" {
-  name     = "${var.resource_group_name}-${var.env_tag}-api-rg-${random_string.build_id.result}"
+  name     = "${var.resource_group_name}-${var.env_tag}-apirg-${random_string.build_id.result}"
   location = "eastus"
   tags = {
     environment = var.env_tag
