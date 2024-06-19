@@ -175,6 +175,7 @@ resource "azurerm_cosmosdb_account" "cosmosdb" {
 resource "azurerm_storage_account" "api_storage" {
   #checkov:skip=CKV2_AZURE_1:Accepting default key management.
   #checkov:skip=CKV2_AZURE_33:Delaying private endpoint setup.
+  #checkov:skip=CKV2_AZURE_40:Cannot disable shared access key.
   account_replication_type        = "GRS"
   account_tier                    = "Standard"
   location                        = azurerm_resource_group.api_rg.location
@@ -183,7 +184,6 @@ resource "azurerm_storage_account" "api_storage" {
   min_tls_version                 = "TLS1_2"
   allow_nested_items_to_be_public = false
   public_network_access_enabled   = false
-  shared_access_key_enabled       = false
   blob_properties {
     delete_retention_policy {
       days = 7
@@ -217,13 +217,12 @@ resource "azurerm_storage_account" "api_storage" {
 }
 
 resource "azurerm_service_plan" "service_plan" {
-  name                   = "azure-functions-${var.resource_group_name}-${var.env_tag}"
-  resource_group_name    = azurerm_resource_group.api_rg.name
-  location               = azurerm_resource_group.api_rg.location
-  os_type                = "Linux"
-  sku_name               = "Y1"
-  zone_balancing_enabled = true
-  worker_count           = 2
+  #checkov:skip=CKV_AZURE_212:Scaling requires support request.
+  name                = "azure-functions-${var.resource_group_name}-${var.env_tag}"
+  resource_group_name = azurerm_resource_group.api_rg.name
+  location            = azurerm_resource_group.api_rg.location
+  os_type             = "Linux"
+  sku_name            = "Y1"
 }
 
 resource "azurerm_linux_function_app" "linux_function-app" {
