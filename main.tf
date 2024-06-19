@@ -176,24 +176,24 @@ resource "azurerm_storage_account" "api_storage" {
   #checkov:skip=CKV2_AZURE_1:Accepting default key management.
   #checkov:skip=CKV2_AZURE_33:Delaying private endpoint setup.
   #checkov:skip=CKV2_AZURE_40:Cannot disable shared access key.
-  account_replication_type        = "GRS"
-  account_tier                    = "Standard"
-  location                        = azurerm_resource_group.api_rg.location
-  name                            = "${var.resource_group_name}apistorage${random_string.build_id.result}"
-  resource_group_name             = azurerm_resource_group.api_rg.name
-  min_tls_version                 = "TLS1_2"
-  allow_nested_items_to_be_public = false
-  public_network_access_enabled   = false
-  shared_access_key_enabled       = true
+  account_replication_type = "GRS"
+  account_tier             = "Standard"
+  location                 = azurerm_resource_group.api_rg.location
+  name                     = "${var.resource_group_name}apistorage${random_string.build_id.result}"
+  resource_group_name      = azurerm_resource_group.api_rg.name
+  min_tls_version          = "TLS1_2"
+  //allow_nested_items_to_be_public = false
+  //public_network_access_enabled   = false
+  //shared_access_key_enabled       = true
   blob_properties {
     delete_retention_policy {
       days = 7
     }
   }
-  sas_policy {
-    expiration_period = "90.00:00:00"
-    expiration_action = "Log"
-  }
+  //sas_policy {
+  //  expiration_period = "90.00:00:00"
+  //  expiration_action = "Log"
+  //}
   queue_properties {
     logging {
       delete                = true
