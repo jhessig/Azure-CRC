@@ -13,7 +13,7 @@ terraform {
   required_version = ">= 1.1.0"
 }
 
-resource "random_string" "storage_id" {
+resource "random_string" "build_id" {
   length  = 10
   upper   = false
   special = false
@@ -25,7 +25,7 @@ provider "azurerm" {
 
 ### Set up front end.
 resource "azurerm_resource_group" "rg" {
-  name     = "${var.resource_group_name}-${var.env_tag}-rg"
+  name     = "${var.resource_group_name}-${var.env_tag}-rg-${random_string.build_id.result}"
   location = "eastus"
   tags = {
     environment = var.env_tag
@@ -48,7 +48,7 @@ resource "azurerm_storage_account" "storage" {
   account_replication_type = "GRS"
   account_tier             = "Standard"
   location                 = azurerm_resource_group.rg.location
-  name                     = "${var.resource_group_name}storage${random_string.storage_id.result}"
+  name                     = "${var.resource_group_name}-storage-${random_string.build_id.result}"
   resource_group_name      = azurerm_resource_group.rg.name
   min_tls_version          = "TLS1_2"
   static_website {
@@ -102,7 +102,7 @@ resource "azurerm_cdn_profile" "cdn_profile" {
 
 resource "azurerm_cdn_endpoint" "cdn_endpoint" {
   location            = azurerm_resource_group.rg.location
-  name                = "${var.sld_name}-${var.tld_name}-${var.resource_group_name}-${var.env_tag}"
+  name                = "${var.resource_group_name}-${var.env_tag}-cdn-${random_string.build_id.result}"
   profile_name        = azurerm_cdn_profile.cdn_profile.name
   resource_group_name = azurerm_resource_group.rg.name
   origin_host_header  = azurerm_storage_account.storage.primary_web_host
@@ -140,7 +140,7 @@ resource "azurerm_dns_cname_record" "cdn_cname" {
 
 ### Set up API.
 resource "azurerm_resource_group" "api_rg" {
-  name     = "${var.resource_group_name}-${var.env_tag}-api-rg"
+  name     = "${var.resource_group_name}-${var.env_tag}-api-rg-${random_string.build_id.result}"
   location = "eastus"
   tags = {
     environment = var.env_tag
@@ -151,7 +151,7 @@ resource "azurerm_cosmosdb_account" "cosmosdb" {
   #checkov:skip=CKV_AZURE_100:Accepting default key management.
   #checkov:skip=CKV_AZURE_140:Local authentication can only be disabled when using the SQL API.
   location                           = azurerm_resource_group.api_rg.location
-  name                               = "${var.resource_group_name}-cosmos-${var.env_tag}-${random_string.storage_id.result}"
+  name                               = "${var.resource_group_name}-cosmos-${var.env_tag}-${random_string.build_id.result}"
   offer_type                         = "Standard"
   resource_group_name                = azurerm_resource_group.api_rg.name
   kind                               = "GlobalDocumentDB"
@@ -179,7 +179,7 @@ resource "azurerm_storage_account" "api_storage" {
   account_replication_type        = "GRS"
   account_tier                    = "Standard"
   location                        = azurerm_resource_group.api_rg.location
-  name                            = "${var.resource_group_name}apistorage${random_string.storage_id.result}"
+  name                            = "${var.resource_group_name}-apistorage-${random_string.build_id.result}"
   resource_group_name             = azurerm_resource_group.api_rg.name
   min_tls_version                 = "TLS1_2"
   allow_nested_items_to_be_public = false
@@ -228,7 +228,7 @@ resource "azurerm_service_plan" "service_plan" {
 }
 
 resource "azurerm_linux_function_app" "linux_function-app" {
-  name                          = "${var.resource_group_name}function${random_string.storage_id.result}"
+  name                          = "${var.resource_group_name}-${var.env_tag}-function-${random_string.build_id.result}"
   resource_group_name           = azurerm_resource_group.api_rg.name
   location                      = azurerm_resource_group.api_rg.location
   storage_account_name          = azurerm_storage_account.api_storage.name
