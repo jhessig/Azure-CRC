@@ -79,6 +79,12 @@ jobs:
       - name: "Run Tests"
         run: npx playwright test
 
+      - name: "Run Checkov"
+        id: checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          framework: terraform
+
 #      - name: "Upload Artifact"
 #        uses: actions/upload-artifact@v4
 #        if: always()
