@@ -40,7 +40,7 @@ jobs:
           node-version: lts/*
 
       - name: 'Terraform Initialize'
-        run: terraform init -backend-config="storage_account_name=$STORAGE_ACCOUNT" -backend-config="container_name=$CONTAINER_NAME" -backend-config="resource_group_name=$RESOURCE_GROUP" -backend-config="key=github-test.terraform.tfstate"
+        run: terraform init -backend-config="storage_account_name=$STORAGE_ACCOUNT" -backend-config="container_name=$CONTAINER_NAME" -backend-config="resource_group_name=$RESOURCE_GROUP" -backend-config="key=github-${{ steps.extract_branch.outputs.branch }}.terraform.tfstate"
 
       - name: "Terraform Validate"
         run: terraform validate
