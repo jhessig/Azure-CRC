@@ -2,13 +2,23 @@ name: 'Terraform Smoke Test'
 
 on:
   push:
-    branches:
-      - 'test'
+    branches-ignore:
+      - 'master'
   pull_request:
     branches:
       - 'test'
 
 jobs:
+  get-branch:
+    name: 'Get Branch'
+    runs-on: ubuntu-latest
+    outputs:
+      get_branch: ${{ steps.get_branch.outputs.branch }}
+    steps:
+      - name: 'Branch'
+        id: get_branch
+        run: |
+          echo "::set-output name=branch::$(echo $GITHUB_BASE_REF)"
   terraform-apply:
     name: 'Terraform-Apply'
     runs-on: ubuntu-latest
@@ -20,7 +30,7 @@ jobs:
       RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
       STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
       CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
-      env_tag: "test"
+      env_tag: ${{ needs.get-branch.outputs.get_branch }}
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v4
