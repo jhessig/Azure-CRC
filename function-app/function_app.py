@@ -26,13 +26,13 @@ def TestHttpTrigger(req: func.HttpRequest) -> func.HttpResponse:
              status_code=200
         )
 
-@app.route()
-@app.cosmos_db_output(arg_name="documents",
-                      database_name="DB_NAME",
-                      collection_name="COLLECTION_NAME",
-                      create_if_not_exists=True,
-                      connection_string_setting="CONNECTION_SETTING")
-def main(req: func.HttpRequest, documents: func.Out[func.Document]) -> func.HttpResponse:
-    request_body = req.get_body()
-    documents.set(func.Document.from_json(request_body))
-    return 'OK'
+@app.function_name(name="CosmosDBTrigger")
+@app.cosmos_db_trigger(name="documents",
+                       connection="CONNECTION_SETTING",
+                       database_name="DB_NAME",
+                       container_name="CONTAINER_NAME",
+                       lease_container_name="leases",
+                       create_lease_container_if_not_exists="true")
+def test_function(documents: func.DocumentList) -> str:
+    if documents:
+        logging.info('Document id: %s', documents[0]['id'])
