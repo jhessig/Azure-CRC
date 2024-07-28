@@ -241,7 +241,7 @@ resource "azurerm_linux_function_app" "linux_function-app" {
   storage_account_access_key    = azurerm_storage_account.api_storage.primary_access_key
   service_plan_id               = azurerm_service_plan.service_plan.id
   https_only                    = true
-  public_network_access_enabled = false
+  public_network_access_enabled = true
   app_settings = {
     "ENABLE_ORYX_BUILD"              = "true"
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "true"
