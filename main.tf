@@ -227,6 +227,12 @@ resource "azurerm_service_plan" "service_plan" {
   sku_name            = "Y1"
 }
 
+data "archive_file" "function" {
+  type        = "zip"
+  source_dir  = "${path.module}/function-app/"
+  output_path = "${path.module}/functions.zip"
+}
+
 resource "azurerm_linux_function_app" "linux_function-app" {
   name                          = "${var.resource_group_name}-${var.env_tag}-function-${random_string.build_id.result}"
   resource_group_name           = azurerm_resource_group.api_rg.name
@@ -236,11 +242,18 @@ resource "azurerm_linux_function_app" "linux_function-app" {
   service_plan_id               = azurerm_service_plan.service_plan.id
   https_only                    = true
   public_network_access_enabled = false
+  app_settings = {
+    "ENABLE_ORYX_BUILD"              = "true"
+    "SCM_DO_BUILD_DURING_DEPLOYMENT" = "true"
+    "FUNCTIONS_WORKER_RUNTIME"       = "python"
+    "AzureWebJobsFeatureFlags"       = "EnableWorkerIndexing"
+  }
   site_config {
     application_stack {
       python_version = "3.9"
     }
   }
+  zip_deploy_file = data.archive_file.function.output_path
 }
 
 ### Set CDN custom domains.
