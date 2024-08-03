@@ -1,6 +1,7 @@
 import azure.functions as func
 import datetime
 import json
+import uuid
 import logging
 
 app = func.FunctionApp()
@@ -25,14 +26,3 @@ def TestHttpTrigger(req: func.HttpRequest) -> func.HttpResponse:
              "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
              status_code=200
         )
-
-@app.function_name(name="CosmosDBTrigger")
-@app.cosmos_db_trigger(name="documents",
-                       connection="CONNECTION_SETTING",
-                       database_name="DB_NAME",
-                       container_name="CONTAINER_NAME",
-                       lease_container_name="leases",
-                       create_lease_container_if_not_exists="true")
-def test_function(documents: func.DocumentList) -> str:
-    if documents:
-        logging.info('Document id: %s', documents[0]['id'])

@@ -155,7 +155,7 @@ resource "azurerm_cosmosdb_account" "cosmosdb" {
   offer_type                         = "Standard"
   resource_group_name                = azurerm_resource_group.api_rg.name
   kind                               = "GlobalDocumentDB"
-  public_network_access_enabled      = false
+  public_network_access_enabled      = true
   access_key_metadata_writes_enabled = false
   consistency_policy {
     consistency_level = "Session"
@@ -247,6 +247,11 @@ resource "azurerm_linux_function_app" "linux_function-app" {
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "true"
     "FUNCTIONS_WORKER_RUNTIME"       = "python"
     "AzureWebJobsFeatureFlags"       = "EnableWorkerIndexing"
+    COSMOS_ENDPOINT                  = azurerm_cosmosdb_account.cosmosdb.endpoint
+    COSMOS_KEY                       = azurerm_cosmosdb_account.cosmosdb.secondary_key
+    COSMOS_DATABASE_NAME             = ""
+    COSMOS_CONTAINER_NAME            = ""
+    COSMOS_CONN_STRING               = azurerm_cosmosdb_account.cosmosdb.connection_strings[0]
   }
   site_config {
     application_stack {
