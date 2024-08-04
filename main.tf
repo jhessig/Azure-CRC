@@ -172,7 +172,7 @@ resource "azurerm_cosmosdb_account" "cosmosdb" {
   }
 }
 
-resource "azurerm_cosmosdb_table" "example" {
+resource "azurerm_cosmosdb_table" "cosmosdb_table" {
   name                = "functions-cosmos-table"
   resource_group_name = azurerm_resource_group.api_rg.name
   account_name        = azurerm_cosmosdb_account.cosmosdb.name
@@ -255,8 +255,8 @@ resource "azurerm_linux_function_app" "linux_function-app" {
     "AzureWebJobsFeatureFlags"       = "EnableWorkerIndexing"
     COSMOS_ENDPOINT                  = azurerm_cosmosdb_account.cosmosdb.endpoint
     COSMOS_KEY                       = azurerm_cosmosdb_account.cosmosdb.secondary_key
-    COSMOS_DATABASE_NAME             = ""
-    COSMOS_CONTAINER_NAME            = ""
+    COSMOS_DATABASE_NAME             = "TablesDB"
+    COSMOS_CONTAINER_NAME            = azurerm_cosmosdb_table.cosmosdb_table.name
     COSMOS_CONN_STRING               = azurerm_cosmosdb_account.cosmosdb.connection_strings[0]
   }
   site_config {
