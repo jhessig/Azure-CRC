@@ -172,6 +172,13 @@ resource "azurerm_cosmosdb_account" "cosmosdb" {
   }
 }
 
+resource "azurerm_cosmosdb_table" "example" {
+  name                = "functions-cosmos-table"
+  resource_group_name = azurerm_resource_group.api_rg.name
+  account_name        = azurerm_cosmosdb_account.cosmosdb.name
+  throughput          = 400
+}
+
 resource "azurerm_storage_account" "api_storage" {
   #checkov:skip=CKV2_AZURE_1:Accepting default key management.
   #checkov:skip=CKV2_AZURE_33:Delaying private endpoint setup.
