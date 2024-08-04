@@ -257,7 +257,7 @@ resource "azurerm_linux_function_app" "linux_function-app" {
     COSMOS_KEY                       = azurerm_cosmosdb_account.cosmosdb.secondary_key
     COSMOS_DATABASE_NAME             = "TablesDB"
     COSMOS_CONTAINER_NAME            = azurerm_cosmosdb_table.cosmosdb_table.name
-    COSMOS_CONN_STRING               = azurerm_cosmosdb_account.cosmosdb.connection_strings[0]
+    COSMOS_CONN_STRING               = "AccountEndpoint=${azurerm_cosmosdb_account.cosmosdb.endpoint};AccountKey=${azurerm_cosmosdb_account.cosmosdb.primary_key};"
   }
   site_config {
     application_stack {
