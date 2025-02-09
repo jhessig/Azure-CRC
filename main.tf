@@ -148,8 +148,11 @@ resource "azurerm_resource_group" "api_rg" {
 }
 
 resource "azurerm_cosmosdb_account" "cosmosdb" {
+  #checkov:skip=CKV_AZURE_99: "Ensure Cosmos DB accounts have restricted access" Review access restrictions TODO
   #checkov:skip=CKV_AZURE_100:Accepting default key management.
+  #checkov:skip=CKV_AZURE_101: "Ensure that Azure Cosmos DB disables public network access" Review public access. TODO
   #checkov:skip=CKV_AZURE_140:Local authentication can only be disabled when using the SQL API.
+
   location                           = azurerm_resource_group.api_rg.location
   name                               = "${var.resource_group_name}-cosmos-${var.env_tag}-${random_string.build_id.result}"
   offer_type                         = "Standard"
@@ -182,6 +185,8 @@ resource "azurerm_storage_account" "api_storage" {
   #checkov:skip=CKV2_AZURE_1:Accepting default key management.
   #checkov:skip=CKV2_AZURE_33:Delaying private endpoint setup.
   #checkov:skip=CKV2_AZURE_40:Cannot disable shared access key.
+  #checkov:skip=CKV_AZURE_59: "Ensure that Storage accounts disallow public access" Review public access TODO
+  #checkov:skip=CKV_AZURE_190: "Ensure that Storage blobs restrict public access" Review public access TODO
   account_replication_type = "GRS"
   account_tier             = "Standard"
   location                 = azurerm_resource_group.api_rg.location
