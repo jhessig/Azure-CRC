@@ -101,6 +101,7 @@ resource "azurerm_cdn_profile" "cdn_profile" {
 }
 
 resource "azurerm_cdn_endpoint" "cdn_endpoint" {
+  ### AZURE CDN RETIRES September 30, 2027.
   location            = azurerm_resource_group.rg.location
   name                = "${var.resource_group_name}-${var.env_tag}-cdnep-${random_string.build_id.result}"
   profile_name        = azurerm_cdn_profile.cdn_profile.name
