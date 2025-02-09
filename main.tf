@@ -236,7 +236,7 @@ resource "azurerm_service_plan" "service_plan" {
   resource_group_name = azurerm_resource_group.api_rg.name
   location            = azurerm_resource_group.api_rg.location
   os_type             = "Linux"
-  sku_name            = "Y1"
+  sku_name            = "F1"
 }
 
 data "archive_file" "function" {
