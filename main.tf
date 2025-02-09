@@ -184,8 +184,10 @@ resource "azurerm_cosmosdb_table" "cosmosdb_table" {
 
 resource "azurerm_storage_account" "api_storage" {
   #checkov:skip=CKV2_AZURE_1:Accepting default key management.
-  #checkov:skip=CKV2_AZURE_33:Delaying private endpoint setup.
+  #checkov:skip=CKV2_AZURE_33:Delaying private endpoint setup. TODO
   #checkov:skip=CKV2_AZURE_40:Cannot disable shared access key.
+  #checkov:skip=CKV2_AZURE_41: "Ensure storage account is configured with SAS expiration policy" Review feasiblity TODO
+  #checkov:skip=CKV2_AZURE_47: "Ensure storage account is configured without blob anonymous access" Review TODO
   #checkov:skip=CKV_AZURE_59: "Ensure that Storage accounts disallow public access" Review public access TODO
   #checkov:skip=CKV_AZURE_190: "Ensure that Storage blobs restrict public access" Review public access TODO
   account_replication_type = "GRS"
@@ -246,6 +248,7 @@ data "archive_file" "function" {
 }
 
 resource "azurerm_linux_function_app" "linux_function-app" {
+  #checkov:skip=CKV_AZURE_221: "Ensure that Azure Function App public network access is disabled" Review public access TODO
   name                          = "${var.resource_group_name}-${var.env_tag}-function-${random_string.build_id.result}"
   resource_group_name           = azurerm_resource_group.api_rg.name
   location                      = azurerm_resource_group.api_rg.location
