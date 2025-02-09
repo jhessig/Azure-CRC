@@ -26,7 +26,7 @@ provider "azurerm" {
 ### Set up front end.
 resource "azurerm_resource_group" "rg" {
   name     = "${var.resource_group_name}-${var.env_tag}-rg-${random_string.build_id.result}"
-  location = "eastus"
+  location = var.azure_region
   tags = {
     environment = var.env_tag
   }
@@ -142,7 +142,7 @@ resource "azurerm_dns_cname_record" "cdn_cname" {
 ### Set up API.
 resource "azurerm_resource_group" "api_rg" {
   name     = "${var.resource_group_name}-${var.env_tag}-apirg-${random_string.build_id.result}"
-  location = "eastus"
+  location = var.azure_region
   tags = {
     environment = var.env_tag
   }
