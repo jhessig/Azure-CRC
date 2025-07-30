@@ -20,6 +20,7 @@ jobs:
       RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
       STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
       CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
+      KEY_VAULT_NAME: ${{ secrets.KEY_VAULT_NAME }}
     steps:
       - name: 'Extract branch name'
         shell: bash
