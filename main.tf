@@ -13,16 +13,20 @@ terraform {
   required_version = ">= 1.1.0"
 }
 
+provider "azurerm" {
+  features {}
+}
+
+data "azurerm_key_vault" "key_vault" {
+  name                = var.key_vault_name
+  resource_group_name = var.key_vault_rg
+}
+
 resource "random_string" "build_id" {
   length  = 10
   upper   = false
   special = false
 }
-
-provider "azurerm" {
-  features {}
-}
-
 ### Set up front end.
 resource "azurerm_resource_group" "rg" {
   name     = "${var.resource_group_name}-${var.env_tag}-rg-${random_string.build_id.result}"
@@ -83,14 +87,26 @@ resource "azurerm_storage_account" "storage" {
   }
 }
 
-resource "azurerm_storage_blob" "blob" {
-  for_each               = fileset("${path.root}/static/", "**/*")
-  name                   = trimprefix(each.key, "static/")
-  storage_account_name   = azurerm_storage_account.storage.name
-  storage_container_name = "$web"
-  type                   = "Block"
-  content_type           = (length(regexall(".*\\.html$", each.key)) > 0 ? "text/html" : "application/octet-stream")
-  source                 = "${path.root}/static/${each.key}"
+# resource "azurerm_storage_blob" "blob" {
+#   for_each               = fileset("${path.root}/static/", "**/*")
+#   name                   = trimprefix(each.key, "static/")
+#   storage_account_name   = azurerm_storage_account.storage.name
+#   storage_container_name = "$web"
+#   type                   = "Block"
+#   content_type           = (length(regexall(".*\\.html$", each.key)) > 0 ? "text/html" : "application/octet-stream")
+#   source                 = "${path.root}/static/${each.key}"
+# }
+
+resource "azurerm_key_vault_secret" "storage_account" {
+  name         = "storage-account-name"
+  value        = azurerm_storage_account.storage.name
+  key_vault_id = data.azurerm_key_vault.key_vault.id
+}
+
+resource "azurerm_key_vault_secret" "storage_key" {
+  name         = "storage-account-key"
+  value        = azurerm_storage_account.storage.primary_access_key
+  key_vault_id = data.azurerm_key_vault.key_vault.id
 }
 
 resource "azurerm_cdn_profile" "cdn_profile" {
@@ -138,6 +154,8 @@ resource "azurerm_dns_cname_record" "cdn_cname" {
   zone_name           = azurerm_dns_zone.zone.name
   record              = "cdnverify.${azurerm_cdn_endpoint.cdn_endpoint.fqdn}"
 }
+
+
 
 ### Set up API.
 resource "azurerm_resource_group" "api_rg" {
