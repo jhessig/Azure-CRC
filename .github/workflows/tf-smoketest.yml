@@ -53,7 +53,7 @@ jobs:
         run: terraform plan -no-color -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP"
 
       - name: "Terraform Apply"
-        run: terraform apply -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -auto-approve -input=false
+        run: terraform apply -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -auto-approve -input=false
 
       - name: "Inspect Terraform Output"
         run: terraform output storage_url
