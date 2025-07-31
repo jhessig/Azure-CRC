@@ -21,6 +21,7 @@ jobs:
       STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
       CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
       KEY_VAULT_NAME: ${{ secrets.KEY_VAULT_NAME }}
+      FRONTEND_REPO: ${{ vars.FRONTEND_REPO }}
     steps:
       - name: 'Extract branch name'
         shell: bash
@@ -57,6 +58,47 @@ jobs:
 
       - name: "Inspect Terraform Output"
         run: terraform output storage_url
+
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .
+          repository: '$FRONTEND_REPO'
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: $ARM_CLIENT_ID
+          tenant-id: $ARM_TENANT_ID
+          subscription-id: $ARM_SUBSCRIPTION_ID
+
+      - name: Azure Keyvault Secrets
+        uses: Azure/get-keyvault-secrets@v1
+        with:
+          keyvault: $KEYVAULT_NAME
+          secrets: 'storage-account-name, storage-account-key'
+        id: keyvaultSecrets
+
+      - name: Upload to blob storage
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az storage blob upload-batch \
+              --account-name ${{ steps.keyvaultSecrets.outputs.storage-account-name }} \
+              --auth-mode key \
+              --account-key ${{ steps.keyvaultSecrets.outputs.storage-account-key }}\
+              --destination '$web' \
+              --source .
+
+      - name: Purge CDN endpoint
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            az cdn endpoint purge \
+              --content-paths "/*" \
+              --profile-name ${{ steps.keyvaultSecrets.outputs.cdn-profile }} \
+              --name ${{ steps.keyvaultSecrets.outputs.cdn-endpoint }} \
+              --resource-group ${{ steps.keyvaultSecrets.outputs.resource-group }}
 
       - name: "Set CDN URL as env var"
         run: |
@@ -96,4 +138,4 @@ jobs:
 
       - name: "Terraform Destroy"
         if: always()
-        run: terraform destroy -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -auto-approve
+        run: terraform destroy -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -auto-approve

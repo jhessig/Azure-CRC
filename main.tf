@@ -97,18 +97,6 @@ resource "azurerm_storage_account" "storage" {
 #   source                 = "${path.root}/static/${each.key}"
 # }
 
-resource "azurerm_key_vault_secret" "storage_account" {
-  name         = "storage-account-name"
-  value        = azurerm_storage_account.storage.name
-  key_vault_id = data.azurerm_key_vault.key_vault.id
-}
-
-resource "azurerm_key_vault_secret" "storage_key" {
-  name         = "storage-account-key"
-  value        = azurerm_storage_account.storage.primary_access_key
-  key_vault_id = data.azurerm_key_vault.key_vault.id
-}
-
 resource "azurerm_cdn_profile" "cdn_profile" {
   location            = azurerm_resource_group.rg.location
   name                = "${var.resource_group_name}-${var.env_tag}-cdnpf-${random_string.build_id.result}"
@@ -129,6 +117,36 @@ resource "azurerm_cdn_endpoint" "cdn_endpoint" {
     name      = "${var.resource_group_name}-${var.env_tag}-cdn-origin"
   }
   optimization_type = "GeneralWebDelivery"
+}
+
+resource "azurerm_key_vault_secret" "resource_group" {
+  name         = "resource-group"
+  value        = azurerm_resource_group.rg.name
+  key_vault_id = data.azurerm_key_vault.key_vault.id
+}
+
+resource "azurerm_key_vault_secret" "storage_account" {
+  name         = "storage-account-name"
+  value        = azurerm_storage_account.storage.name
+  key_vault_id = data.azurerm_key_vault.key_vault.id
+}
+
+resource "azurerm_key_vault_secret" "storage_key" {
+  name         = "storage-account-key"
+  value        = azurerm_storage_account.storage.primary_access_key
+  key_vault_id = data.azurerm_key_vault.key_vault.id
+}
+
+resource "azurerm_key_vault_secret" "cdn_profile" {
+  name         = "cdn-profile"
+  value        = azurerm_cdn_profile.cdn_profile.name
+  key_vault_id = data.azurerm_key_vault.key_vault.id
+}
+
+resource "azurerm_key_vault_secret" "cdn_endpoint" {
+  name         = "cdn-endpoint"
+  value        = azurerm_cdn_endpoint.cdn_endpoint.name
+  key_vault_id = data.azurerm_key_vault.key_vault.id
 }
 
 resource "azurerm_dns_a_record" "a_root" {
