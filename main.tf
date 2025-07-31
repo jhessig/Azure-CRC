@@ -13,16 +13,20 @@ terraform {
   required_version = ">= 1.1.0"
 }
 
+provider "azurerm" {
+  features {}
+}
+
+data "azurerm_key_vault" "key_vault" {
+  name                = var.key_vault_name
+  resource_group_name = var.key_vault_rg
+}
+
 resource "random_string" "build_id" {
   length  = 10
   upper   = false
   special = false
 }
-
-provider "azurerm" {
-  features {}
-}
-
 ### Set up front end.
 resource "azurerm_resource_group" "rg" {
   name     = "${var.resource_group_name}-${var.env_tag}-rg-${random_string.build_id.result}"
@@ -83,16 +87,6 @@ resource "azurerm_storage_account" "storage" {
   }
 }
 
-resource "azurerm_storage_blob" "blob" {
-  for_each               = fileset("${path.root}/static/", "**/*")
-  name                   = trimprefix(each.key, "static/")
-  storage_account_name   = azurerm_storage_account.storage.name
-  storage_container_name = "$web"
-  type                   = "Block"
-  content_type           = (length(regexall(".*\\.html$", each.key)) > 0 ? "text/html" : "application/octet-stream")
-  source                 = "${path.root}/static/${each.key}"
-}
-
 resource "azurerm_cdn_profile" "cdn_profile" {
   location            = azurerm_resource_group.rg.location
   name                = "${var.resource_group_name}-${var.env_tag}-cdnpf-${random_string.build_id.result}"
@@ -113,6 +107,46 @@ resource "azurerm_cdn_endpoint" "cdn_endpoint" {
     name      = "${var.resource_group_name}-${var.env_tag}-cdn-origin"
   }
   optimization_type = "GeneralWebDelivery"
+}
+
+resource "azurerm_key_vault_secret" "resource_group" {
+  name            = "${var.env_tag}-resource-group"
+  value           = azurerm_resource_group.rg.name
+  key_vault_id    = data.azurerm_key_vault.key_vault.id
+  content_type    = "text/plain"
+  expiration_date = "2026-12-31T00:00:01Z"
+}
+
+resource "azurerm_key_vault_secret" "storage_account" {
+  name            = "${var.env_tag}-storage-account-name"
+  value           = azurerm_storage_account.storage.name
+  key_vault_id    = data.azurerm_key_vault.key_vault.id
+  content_type    = "text/plain"
+  expiration_date = "2026-12-31T00:00:01Z"
+}
+
+resource "azurerm_key_vault_secret" "storage_key" {
+  name            = "${var.env_tag}-storage-account-key"
+  value           = azurerm_storage_account.storage.primary_access_key
+  key_vault_id    = data.azurerm_key_vault.key_vault.id
+  content_type    = "text/plain"
+  expiration_date = "2026-12-31T00:00:01Z"
+}
+
+resource "azurerm_key_vault_secret" "cdn_profile" {
+  name            = "${var.env_tag}-cdn-profile"
+  value           = azurerm_cdn_profile.cdn_profile.name
+  key_vault_id    = data.azurerm_key_vault.key_vault.id
+  content_type    = "text/plain"
+  expiration_date = "2026-12-31T00:00:01Z"
+}
+
+resource "azurerm_key_vault_secret" "cdn_endpoint" {
+  name            = "${var.env_tag}-cdn-endpoint"
+  value           = azurerm_cdn_endpoint.cdn_endpoint.name
+  key_vault_id    = data.azurerm_key_vault.key_vault.id
+  content_type    = "text/plain"
+  expiration_date = "2026-12-31T00:00:01Z"
 }
 
 resource "azurerm_dns_a_record" "a_root" {
