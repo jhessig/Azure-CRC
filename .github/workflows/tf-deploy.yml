@@ -20,7 +20,8 @@ jobs:
       RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
       STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
       CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
-      env_tag: "prod"
+      KEY_VAULT_NAME: ${{ secrets.KEY_VAULT_NAME }}
+      FRONTEND_REPO: ${{ vars.FRONTEND_REPO }}
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v4
@@ -35,8 +36,57 @@ jobs:
       #  run: terraform fmt -check
 
       - name: Terraform Plan
-        run: terraform plan -no-color -var="env_tag=${{ 'prod' }}"
+        run: terraform plan -no-color -var="env_tag=${{ 'prod' }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP"
 
       - name: Terraform Apply
         #if: github.ref == 'refs/heads/"master"' && github.event_name == 'push'
-        run: terraform apply -var="env_tag=${{ 'prod' }}" -auto-approve -input=false
+        run: terraform apply -var="env_tag=${{ 'prod' }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -auto-approve -input=false
+
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            img
+          repository: ${{ vars.FRONTEND_REPO }}
+          path: frontend-repo
+
+      - name: "Azure login"
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+
+      - name: "Upload to blob storage"
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            STORAGE_NAME=$(az keyvault secret show \
+              --name "prod-storage-account-name" \
+              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
+            STORAGE_KEY=$(az keyvault secret show \
+              --name "prod-storage-account-key" \
+              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
+            az storage blob upload-batch \
+              --account-name "$STORAGE_NAME" \
+              --auth-mode key \
+              --account-key "$STORAGE_KEY" \
+              --destination '$web' \
+              --source ./frontend-repo
+
+      - name: "Purge CDN endpoint"
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            CDN_PROFILE=$(az keyvault secret show \
+              --name "prod-cdn-profile" \
+              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
+            CDN_ENDPOINT=$(az keyvault secret show \
+              --name "prod-cdn-endpoint" \
+              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
+            RESOURCE_GROUP=$(az keyvault secret show \
+              --name "prod-resource-group" \
+              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)        
+            az cdn endpoint purge \
+              --content-paths "/*" \
+              --profile-name "$CDN_PROFILE" \
+              --name "$CDN_ENDPOINT" \
+              --resource-group "$RESOURCE_GROUP"
