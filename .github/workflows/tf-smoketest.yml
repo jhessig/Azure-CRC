@@ -72,8 +72,10 @@ jobs:
       - name: "Checkout"
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .
+          sparse-checkout: |
+            img
           repository: ${{ vars.FRONTEND_REPO }}
+          path: frontend-repo
 
       - name: "Azure login"
         uses: azure/login@v2
@@ -92,11 +94,11 @@ jobs:
         with:
           inlineScript: |
             az storage blob upload-batch \
-              --account-name ${{ steps.keyvaultSecrets.outputs.storage-account-name }} \
+              --account-name "${{ steps.keyvaultSecrets.outputs.storage-account-name }}" \
               --auth-mode key \
-              --account-key ${{ steps.keyvaultSecrets.outputs.storage-account-key }}\
+              --account-key "${{ steps.keyvaultSecrets.outputs.storage-account-key }}"\
               --destination '$web' \
-              --source .
+              --source ./frontend-repo
 
       - name: Purge CDN endpoint
         uses: azure/cli@v2
@@ -104,9 +106,9 @@ jobs:
           inlineScript: |
             az cdn endpoint purge \
               --content-paths "/*" \
-              --profile-name ${{ steps.keyvaultSecrets.outputs.cdn-profile }} \
-              --name ${{ steps.keyvaultSecrets.outputs.cdn-endpoint }} \
-              --resource-group ${{ steps.keyvaultSecrets.outputs.resource-group }}
+              --profile-name "${{ steps.keyvaultSecrets.outputs.cdn-profile }}" \
+              --name "${{ steps.keyvaultSecrets.outputs.cdn-endpoint }}" \
+              --resource-group "${{ steps.keyvaultSecrets.outputs.resource-group }}"
 
       - name: "Install Package Lock Only"
         run: npm install --package-lock-only
