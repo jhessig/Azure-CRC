@@ -59,24 +59,31 @@ jobs:
       - name: "Inspect Terraform Output"
         run: terraform output storage_url
 
+      - name: "Set CDN URL as env var"
+        run: |
+          OUTPUT=$(terraform output -raw storage_url)
+          echo "SITE_URL=$OUTPUT" >> $GITHUB_ENV
+
+      - name: "Set environment tag"
+        run: |
+          OUTPUT=$(terraform output -raw env_tag)
+          echo "ENV_TAG=$OUTPUT" >> $GITHUB_ENV
+
       - name: "Checkout"
         uses: actions/checkout@v4
         with:
           sparse-checkout: .
           repository: ${{ vars.FRONTEND_REPO }}
 
-      - name: Azure login
+      - name: "Azure login"
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          auth-type: 'SERVICE_PRINCIPAL'
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
 
-      - name: Azure Keyvault Secrets
+      - name: "Azure Keyvault Secrets"
         uses: Azure/get-keyvault-secrets@v1
         with:
-          keyvault: $KEYVAULT_NAME
+          keyvault: ${{ secrets.KEY_VAULT_NAME }}
           secrets: 'storage-account-name, storage-account-key'
         id: keyvaultSecrets
 
@@ -100,16 +107,6 @@ jobs:
               --profile-name ${{ steps.keyvaultSecrets.outputs.cdn-profile }} \
               --name ${{ steps.keyvaultSecrets.outputs.cdn-endpoint }} \
               --resource-group ${{ steps.keyvaultSecrets.outputs.resource-group }}
-
-      - name: "Set CDN URL as env var"
-        run: |
-          OUTPUT=$(terraform output -raw storage_url)
-          echo "SITE_URL=$OUTPUT" >> $GITHUB_ENV
-
-      - name: "Set environment tag"
-        run: |
-          OUTPUT=$(terraform output -raw env_tag)
-          echo "ENV_TAG=$OUTPUT" >> $GITHUB_ENV
 
       - name: "Install Package Lock Only"
         run: npm install --package-lock-only
