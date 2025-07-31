@@ -63,7 +63,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           sparse-checkout: .
-          repository: '$FRONTEND_REPO'
+          repository: $FRONTEND_REPO
 
       - name: Azure login
         uses: azure/login@v2
