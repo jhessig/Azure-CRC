@@ -120,31 +120,31 @@ resource "azurerm_cdn_endpoint" "cdn_endpoint" {
 }
 
 resource "azurerm_key_vault_secret" "resource_group" {
-  name         = "resource-group"
+  name         = "${var.env_tag}-resource-group"
   value        = azurerm_resource_group.rg.name
   key_vault_id = data.azurerm_key_vault.key_vault.id
 }
 
 resource "azurerm_key_vault_secret" "storage_account" {
-  name         = "storage-account-name"
+  name         = "${var.env_tag}-storage-account-name"
   value        = azurerm_storage_account.storage.name
   key_vault_id = data.azurerm_key_vault.key_vault.id
 }
 
 resource "azurerm_key_vault_secret" "storage_key" {
-  name         = "storage-account-key"
+  name         = "${var.env_tag}-storage-account-key"
   value        = azurerm_storage_account.storage.primary_access_key
   key_vault_id = data.azurerm_key_vault.key_vault.id
 }
 
 resource "azurerm_key_vault_secret" "cdn_profile" {
-  name         = "cdn-profile"
+  name         = "${var.env_tag}-cdn-profile"
   value        = azurerm_cdn_profile.cdn_profile.name
   key_vault_id = data.azurerm_key_vault.key_vault.id
 }
 
 resource "azurerm_key_vault_secret" "cdn_endpoint" {
-  name         = "cdn-endpoint"
+  name         = "${var.env_tag}-cdn-endpoint"
   value        = azurerm_cdn_endpoint.cdn_endpoint.name
   key_vault_id = data.azurerm_key_vault.key_vault.id
 }

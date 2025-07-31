@@ -82,33 +82,48 @@ jobs:
         with:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
 
-      - name: "Azure Keyvault Secrets"
-        uses: Azure/get-keyvault-secrets@v1
-        with:
-          keyvault: ${{ secrets.KEY_VAULT_NAME }}
-          secrets: 'storage-account-name, storage-account-key'
-        id: keyvaultSecrets
+#      - name: "Azure Keyvault Secrets"
+#        uses: Azure/get-keyvault-secrets@v1
+#        with:
+#          keyvault: ${{ secrets.KEY_VAULT_NAME }}
+#          secrets: 'storage-account-name, storage-account-key'
+#        id: keyvaultSecrets
 
-      - name: Upload to blob storage
+      - name: "Upload to blob storage"
         uses: azure/cli@v2
         with:
           inlineScript: |
+            STORAGE_NAME=$(az keyvault secret show \
+              --name "${{ steps.extract_branch.outputs.branch }}-storage-account-name" \
+              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
+            STORAGE_KEY=$(az keyvault secret show \
+              --name "${{ steps.extract_branch.outputs.branch }}-storage-account-key" \
+              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
             az storage blob upload-batch \
-              --account-name "${{ steps.keyvaultSecrets.outputs.storage-account-name }}" \
+              --account-name "$STORAGE_NAME" \
               --auth-mode key \
-              --account-key "${{ steps.keyvaultSecrets.outputs.storage-account-key }}"\
+              --account-key "$STORAGE_KEY" \
               --destination '$web' \
               --source ./frontend-repo
 
-      - name: Purge CDN endpoint
+      - name: "Purge CDN endpoint"
         uses: azure/cli@v2
         with:
           inlineScript: |
+            CDN_PROFILE=$(az keyvault secret show \
+              --name "${{ steps.extract_branch.outputs.branch }}-cdn-profile" \
+              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
+            CDN_ENDPOINT=$(az keyvault secret show \
+              --name "${{ steps.extract_branch.outputs.branch }}-cdn-endpoint" \
+              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
+            RESOURCE_GROUP=$(az keyvault secret show \
+              --name "${{ steps.extract_branch.outputs.branch }}-resource-group" \
+              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)        
             az cdn endpoint purge \
               --content-paths "/*" \
-              --profile-name "${{ steps.keyvaultSecrets.outputs.cdn-profile }}" \
-              --name "${{ steps.keyvaultSecrets.outputs.cdn-endpoint }}" \
-              --resource-group "${{ steps.keyvaultSecrets.outputs.resource-group }}"
+              --profile-name "$CDN_PROFILE" \
+              --name "$CDN_ENDPOINT" \
+              --resource-group "$RESOURCE_GROUP"
 
       - name: "Install Package Lock Only"
         run: npm install --package-lock-only
