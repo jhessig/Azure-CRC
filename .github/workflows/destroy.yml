@@ -1,0 +1,32 @@
+name: 'Destroy'
+on:
+  workflow_dispatch:
+
+jobs:
+  destroy:
+    name: 'Destroy'
+    runs-on: ubuntu-latest
+    env:
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
+      STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
+      CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
+      KEY_VAULT_NAME: ${{ secrets.KEY_VAULT_NAME }}
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: 'Extract branch name'
+        shell: bash
+        run: echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+        id: extract_branch
+
+      - name: 'Terraform Initialize'
+        run: terraform init -backend-config="storage_account_name=$STORAGE_ACCOUNT" -backend-config="container_name=$CONTAINER_NAME" -backend-config="resource_group_name=$RESOURCE_GROUP" -backend-config="key=github-${{ steps.extract_branch.outputs.branch }}.terraform.tfstate"
+
+      - name: "Terraform Destroy"
+        if: always()
+        run: terraform destroy -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -auto-approve
