@@ -19,6 +19,11 @@ jobs:
       - name: 'Checkout'
         uses: actions/checkout@v4
 
+      - name: 'Setup Terraform'
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_wrapper: false
+
       - name: 'Extract branch name'
         shell: bash
         run: echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
