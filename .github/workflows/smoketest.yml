@@ -9,7 +9,7 @@ on:
 
 jobs:
   smoketest:
-    name: 'Smoke-Test'
+    name: 'Smoke Test'
     runs-on: ubuntu-latest
     env:
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
@@ -96,7 +96,8 @@ jobs:
               --auth-mode key \
               --account-key "$STORAGE_KEY" \
               --destination '$web' \
-              --source ./frontend-repo
+              --source ./frontend-repo \
+              --overwrite
 
       - name: "Purge CDN endpoint"
         uses: azure/cli@v2
