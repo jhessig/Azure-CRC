@@ -171,9 +171,9 @@ resource "azurerm_dns_cname_record" "www_cname" {
 resource "azurerm_dns_cname_record" "cdn_cname" {
   count               = var.env_tag == "prod" ? 1 : 0
   name                = "cdnverify"
-  resource_group_name = azurerm_dns_zone.zone[count.index].name
+  resource_group_name = azurerm_resource_group.rg.name
   ttl                 = 300
-  zone_name           = azurerm_dns_zone.zone.name
+  zone_name           = azurerm_dns_zone.zone[count.index].name
   record              = "cdnverify.${azurerm_cdn_endpoint.cdn_endpoint.fqdn}"
 }
 
