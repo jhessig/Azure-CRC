@@ -1,6 +1,6 @@
 # Azure Cloud Resume Challenge
 
-[![Terraform Unit Test](https://github.com/jhessig/Azure-CRC/actions/workflows/tf-unittest.yml/badge.svg)](https://github.com/jhessig/Azure-CRC/actions/workflows/tf-unittest.yml) [![Terraform Smoke Test](https://github.com/jhessig/Azure-CRC/actions/workflows/tf-smoketest.yml/badge.svg)](https://github.com/jhessig/Azure-CRC/actions/workflows/tf-smoketest.yml) [![Terraform CD](https://github.com/jhessig/Azure-CRC/actions/workflows/tf-deploy.yml/badge.svg?branch=master)](https://github.com/jhessig/Azure-CRC/actions/workflows/tf-deploy.yml)
+[![Smoke Test](https://github.com/jhessig/Azure-CRC/actions/workflows/smoketest.yml/badge.svg?branch=test)](https://github.com/jhessig/Azure-CRC/actions/workflows/smoketest.yml)[![Deploy](https://github.com/jhessig/Azure-CRC/actions/workflows/deploy.yml/badge.svg?branch=master)](https://github.com/jhessig/Azure-CRC/actions/workflows/deploy.yml)
 
 Welcome to the **Cloud Resume Challenge** project! This repository showcases a fully functional Azure-hosted website that displays my resume. This project is the culmination of the Cloud Resume Challenge, an initiative designed to enhance cloud skills and demonstrate proficiency in various aspects of cloud computing.
 

@@ -1,0 +1,148 @@
+name: 'Smoke Test'
+on:
+  push:
+    branches-ignore:
+      - 'master'
+  pull_request:
+    branches:
+      - 'test'
+
+jobs:
+  smoketest:
+    name: 'Smoke-Test'
+    runs-on: ubuntu-latest
+    env:
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
+      STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
+      CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
+      KEY_VAULT_NAME: ${{ secrets.KEY_VAULT_NAME }}
+      FRONTEND_REPO: ${{ vars.FRONTEND_REPO }}
+    steps:
+      - name: 'Extract branch name'
+        shell: bash
+        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        id: extract_branch
+
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Terraform'
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_wrapper: false
+
+      - name: "Setup Node"
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: 'Terraform Initialize'
+        run: terraform init -backend-config="storage_account_name=$STORAGE_ACCOUNT" -backend-config="container_name=$CONTAINER_NAME" -backend-config="resource_group_name=$RESOURCE_GROUP" -backend-config="key=github-${{ steps.extract_branch.outputs.branch }}.terraform.tfstate"
+
+      - name: "Terraform Validate"
+        run: terraform validate
+
+      - name: "Terraform Format"
+        run: terraform fmt -check
+
+      - name: "Terraform Plan"
+        run: terraform plan -no-color -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP"
+
+      - name: "Terraform Apply"
+        run: terraform apply -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -auto-approve -input=false
+
+      - name: "Inspect Terraform Output"
+        run: terraform output storage_url
+
+      - name: "Set CDN URL as env var"
+        run: |
+          OUTPUT=$(terraform output -raw storage_url)
+          echo "SITE_URL=$OUTPUT" >> $GITHUB_ENV
+
+      - name: "Set environment tag"
+        run: |
+          OUTPUT=$(terraform output -raw env_tag)
+          echo "ENV_TAG=$OUTPUT" >> $GITHUB_ENV
+
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            img
+          repository: ${{ vars.FRONTEND_REPO }}
+          path: frontend-repo
+
+      - name: "Azure login"
+        uses: azure/login@v2
+        with:
+          creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
+
+      - name: "Upload to blob storage"
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            STORAGE_NAME=$(az keyvault secret show \
+              --name "${{ steps.extract_branch.outputs.branch }}-storage-account-name" \
+              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
+            STORAGE_KEY=$(az keyvault secret show \
+              --name "${{ steps.extract_branch.outputs.branch }}-storage-account-key" \
+              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
+            az storage blob upload-batch \
+              --account-name "$STORAGE_NAME" \
+              --auth-mode key \
+              --account-key "$STORAGE_KEY" \
+              --destination '$web' \
+              --source ./frontend-repo
+
+      - name: "Purge CDN endpoint"
+        uses: azure/cli@v2
+        with:
+          inlineScript: |
+            CDN_PROFILE=$(az keyvault secret show \
+              --name "${{ steps.extract_branch.outputs.branch }}-cdn-profile" \
+              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
+            CDN_ENDPOINT=$(az keyvault secret show \
+              --name "${{ steps.extract_branch.outputs.branch }}-cdn-endpoint" \
+              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
+            RESOURCE_GROUP=$(az keyvault secret show \
+              --name "${{ steps.extract_branch.outputs.branch }}-resource-group" \
+              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)        
+            az cdn endpoint purge \
+              --content-paths "/*" \
+              --profile-name "$CDN_PROFILE" \
+              --name "$CDN_ENDPOINT" \
+              --resource-group "$RESOURCE_GROUP"
+
+      - name: "Install Package Lock Only"
+        run: npm install --package-lock-only
+
+      - name: "Install dependencies"
+        run: npm ci
+
+      - name: "Install Playwright Browsers"
+        run: npx playwright install --with-deps
+
+      - name: "Run Tests"
+        run: npx playwright test
+
+      - name: "Run Checkov"
+        id: checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          framework: terraform
+
+#      - name: "Upload Artifact"
+#        uses: actions/upload-artifact@v4
+#        if: always()
+#        with:
+#          name: playwright-report
+#          path: playwright-report/
+#          retention-days: 30
+
+#      - name: "Terraform Destroy"
+#        if: always()
+#        run: terraform destroy -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -auto-approve
