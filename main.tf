@@ -37,6 +37,7 @@ resource "azurerm_resource_group" "rg" {
 }
 
 resource "azurerm_dns_zone" "zone" {
+  count               = var.env_tag == "prod" ? 1 : 0
   name                = "${var.sld_name}.${var.tld_name}"
   resource_group_name = azurerm_resource_group.rg.name
 }
@@ -150,6 +151,7 @@ resource "azurerm_key_vault_secret" "cdn_endpoint" {
 }
 
 resource "azurerm_dns_a_record" "a_root" {
+  count               = var.env_tag == "prod" ? 1 : 0
   name                = "@"
   zone_name           = azurerm_dns_zone.zone.name
   resource_group_name = azurerm_resource_group.rg.name
@@ -158,6 +160,7 @@ resource "azurerm_dns_a_record" "a_root" {
 }
 
 resource "azurerm_dns_cname_record" "www_cname" {
+  count               = var.env_tag == "prod" ? 1 : 0
   name                = "www"
   zone_name           = azurerm_dns_zone.zone.name
   resource_group_name = azurerm_resource_group.rg.name
@@ -166,6 +169,7 @@ resource "azurerm_dns_cname_record" "www_cname" {
 }
 
 resource "azurerm_dns_cname_record" "cdn_cname" {
+  count               = var.env_tag == "prod" ? 1 : 0
   name                = "cdnverify"
   resource_group_name = azurerm_resource_group.rg.name
   ttl                 = 300
