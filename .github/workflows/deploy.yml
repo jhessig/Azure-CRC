@@ -69,7 +69,8 @@ jobs:
               --auth-mode key \
               --account-key "$STORAGE_KEY" \
               --destination '$web' \
-              --source ./frontend-repo
+              --source ./frontend-repo \
+              --overwrite
 
       - name: "Purge CDN endpoint"
         uses: azure/cli@v2
