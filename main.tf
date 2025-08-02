@@ -258,7 +258,6 @@ resource "azurerm_linux_function_app" "linux_function-app" {
   app_settings = {
     "ENABLE_ORYX_BUILD"              = "true"
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "true"
-    "WEBSITE_RUN_FROM_PACKAGE"       = "1"
     "FUNCTIONS_WORKER_RUNTIME"       = "python"
     "AzureWebJobsFeatureFlags"       = "EnableWorkerIndexing"
     COSMOS_ENDPOINT                  = azurerm_cosmosdb_account.cosmosdb.endpoint
