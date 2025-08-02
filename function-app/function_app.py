@@ -4,7 +4,8 @@ import os
 from azure.data.tables import TableServiceClient
 from azure.core.exceptions import ResourceNotFoundError
 
-def main(req: func.HttpRequest) -> func.HttpResponse:
+@app.route(route="VisitorCount", auth_level=func.AuthLevel.FUNCTION)
+def VisitorCount(req: func.HttpRequest) -> func.HttpResponse:
     try:
         # Get connection string
         connection_string = os.environ["COSMOS_CONN_STRING"]
