@@ -304,7 +304,7 @@ resource "azurerm_linux_function_app" "linux_function-app" {
     COSMOS_KEY                       = azurerm_cosmosdb_account.cosmosdb.secondary_key
     COSMOS_DATABASE_NAME             = "TablesDB"
     COSMOS_CONTAINER_NAME            = azurerm_cosmosdb_table.cosmosdb_table.name
-    COSMOS_CONN_STRING               = "AccountEndpoint=${azurerm_cosmosdb_account.cosmosdb.endpoint};AccountKey=${azurerm_cosmosdb_account.cosmosdb.primary_key};"
+    COSMOS_CONN_STRING               = "DefaultEndpointsProtocol=https;AccountName=${azurerm_cosmosdb_account.cosmosdb.name};AccountEndpoint=${azurerm_cosmosdb_account.cosmosdb.endpoint};AccountKey=${azurerm_cosmosdb_account.cosmosdb.primary_key};TableEndpoint=https://${azurerm_cosmosdb_account.cosmosdb.name}.table.cosmos.azure.com:443/"
   }
   site_config {
     application_stack {

@@ -1,55 +1,49 @@
 import azure.functions as func
-import datetime
 import json
-import uuid
-import logging
+import os
+from azure.data.tables import TableServiceClient
+from azure.core.exceptions import ResourceNotFoundError
 
-app = func.FunctionApp()
+def main(req: func.HttpRequest) -> func.HttpResponse:
+    try:
+        # Get connection string
+        connection_string = os.environ["COSMOS_CONN_STRING"]
 
-@app.route(route="TestHttpTrigger", auth_level=func.AuthLevel.FUNCTION)
-def TestHttpTrigger(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info('Python HTTP trigger function processed a request.')
+        # Create table client
+        table_service_client = TableServiceClient.from_connection_string(connection_string)
+        table_client = table_service_client.get_table_client("functions-cosmos-table")
 
-    name = req.params.get('name')
-    if not name:
+        # Try to get existing count
         try:
-            req_body = req.get_json()
-        except ValueError:
-            pass
-        else:
-            name = req_body.get('name')
+            entity = table_client.get_entity(partition_key="visitors", row_key="count")
+            current_count = entity.get("count", 0)
+        except ResourceNotFoundError:
+            # Create initial entity if it doesn't exist
+            current_count = 0
 
-    if name:
-        return func.HttpResponse(f"Hello, {name}. This HTTP triggered function uploaded and executed successfully.")
-    else:
+        # Increment count
+        new_count = current_count + 1
+
+        # Update or create entity
+        entity = {
+            "PartitionKey": "visitors",
+            "RowKey": "count",
+            "count": new_count
+        }
+
+        table_client.upsert_entity(entity)
+
         return func.HttpResponse(
-             "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
-             status_code=200
+            json.dumps({"count": new_count}),
+            status_code=200,
+            headers={
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*"
+            }
         )
 
-# @app.function_name(name="HttpTrigger1")
-# @app.route(route="hello", auth_level=func.AuthLevel.ANONYMOUS)
-# @app.queue_output(arg_name="msg", queue_name="outqueue", connection="AzureWebJobsStorage")
-# @app.cosmos_db_output(arg_name="outputDocument", database_name="COSMOS_DATABASE_NAME", container_name="COSMOS_CONTAINER_NAME", connection="COSMOS_CONN_STRING")
-# def test_function(req: func.HttpRequest, msg: func.Out[func.QueueMessage],
-#     outputDocument: func.Out[func.Document]) -> func.HttpResponse:
-#      logging.info('Python HTTP trigger function processed a request.')
-#      logging.info('Python Cosmos DB trigger function processed a request.')
-#      name = req.params.get('name')
-#      if not name:
-#         try:
-#             req_body = req.get_json()
-#         except ValueError:
-#             pass
-#         else:
-#             name = req_body.get('name')
-#
-#      if name:
-#         outputDocument.set(func.Document.from_dict({"id": name}))
-#         msg.set(name)
-#         return func.HttpResponse(f"Hello {name}!")
-#      else:
-#         return func.HttpResponse(
-#                     "Please pass a name on the query string or in the request body",
-#                     status_code=400
-#                 )
+    except Exception as e:
+        return func.HttpResponse(
+            f"Error: {str(e)}",
+            status_code=500
+        )
