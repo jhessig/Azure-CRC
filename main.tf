@@ -308,7 +308,10 @@ resource "azurerm_linux_function_app" "linux_function-app" {
   }
   site_config {
     application_stack {
-      python_version = "3.9"
+      python_version = "3.12"
+    }
+    cors {
+      allowed_origins = ["https://portal.azure.com"]
     }
   }
   zip_deploy_file = data.archive_file.function.output_path
