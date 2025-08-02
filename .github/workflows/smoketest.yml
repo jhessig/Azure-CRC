@@ -63,11 +63,6 @@ jobs:
           OUTPUT=$(terraform output -raw storage_url)
           echo "SITE_URL=$OUTPUT" >> $GITHUB_ENV
 
-      - name: "Set API URL as env var"
-        run: |
-          OUTPUT=$(terraform output -raw api_url)
-          echo "API_URL=$OUTPUT" >> $GITHUB_ENV
-
       - name: "Set environment tag"
         run: |
           OUTPUT=$(terraform output -raw env_tag)
