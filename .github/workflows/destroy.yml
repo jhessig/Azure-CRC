@@ -30,6 +30,7 @@ jobs:
           branch="${GITHUB_REF#refs/heads/}"
           if [ $branch = "master" ]; then
             branch="prod"
+          fi
           echo "branch=$branch" >> $GITHUB_OUTPUT
         id: extract_branch
 
