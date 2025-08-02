@@ -63,6 +63,11 @@ jobs:
           OUTPUT=$(terraform output -raw storage_url)
           echo "SITE_URL=$OUTPUT" >> $GITHUB_ENV
 
+      - name: "Set API URL as env var"
+        run: |
+          OUTPUT=$(terraform output -raw api_url)
+          echo "API_URL=$OUTPUT" >> $GITHUB_ENV
+
       - name: "Set environment tag"
         run: |
           OUTPUT=$(terraform output -raw env_tag)
@@ -75,6 +80,10 @@ jobs:
             img
           repository: ${{ vars.FRONTEND_REPO }}
           path: frontend-repo
+
+      - name: "Replace API URL in javascript"
+        run: |
+          sed -i 's|{{API_URL}}|"${{ steps.extract_branch.outputs.branch }}-api-url"|g' ./frontend-repo/resume.js
 
       - name: "Azure login"
         uses: azure/login@v2

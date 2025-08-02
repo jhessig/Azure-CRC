@@ -6,8 +6,7 @@ from azure.core.exceptions import ResourceNotFoundError
 
 app = func.FunctionApp()
 
-@app.route(route="VisitorCount", auth_level=func.AuthLevel.FUNCTION)
-def VisitorCount(req: func.HttpRequest) -> func.HttpResponse:
+def visitor_count(req: func.HttpRequest) -> func.HttpResponse:
     try:
         # Get connection string
         connection_string = os.environ["COSMOS_CONN_STRING"]
@@ -42,6 +41,8 @@ def VisitorCount(req: func.HttpRequest) -> func.HttpResponse:
             headers={
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "*"
+                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type"
             }
         )
 
