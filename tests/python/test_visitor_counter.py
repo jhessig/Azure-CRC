@@ -11,7 +11,7 @@ from function_app import visitor_count  # Import your function
 
 class TestVisitorCounter(unittest.TestCase):
 
-    @patch('function_app.visitor_count.TableServiceClient')
+    @patch('function_app.TableServiceClient')
     def test_visitor_counter_new_visitor(self, mock_table_service):
         """Test visitor counter when no existing count exists"""
         # Mock the table client
@@ -31,7 +31,7 @@ class TestVisitorCounter(unittest.TestCase):
         )
 
         # Mock environment variable
-        with patch.dict(os.environ, {'CosmosDBConnectionString': 'test_connection_string'}):
+        with patch.dict(os.environ, {'COSMOS_CONN_STRING': 'test_connection_string'}):
             response = visitor_count(req)
 
         # Assertions
@@ -42,7 +42,7 @@ class TestVisitorCounter(unittest.TestCase):
         # Verify upsert was called with correct data
         mock_table_client.upsert_entity.assert_called_once()
 
-    @patch('function_app.visitor_count.TableServiceClient')
+    @patch('function_app.TableServiceClient')
     def test_visitor_counter_existing_count(self, mock_table_service):
         """Test visitor counter when existing count exists"""
         # Mock the table client
@@ -62,7 +62,7 @@ class TestVisitorCounter(unittest.TestCase):
         )
 
         # Mock environment variable
-        with patch.dict(os.environ, {'CosmosDBConnectionString': 'test_connection_string'}):
+        with patch.dict(os.environ, {'COSMOS_CONN_STRING': 'test_connection_string'}):
             response = visitor_count(req)
 
         # Assertions
@@ -70,7 +70,7 @@ class TestVisitorCounter(unittest.TestCase):
         response_data = json.loads(response.get_body())
         self.assertEqual(response_data['count'], 6)
 
-    @patch('function_app.visitor_count.TableServiceClient')
+    @patch('function_app.TableServiceClient')
     def test_visitor_counter_database_error(self, mock_table_service):
         """Test visitor counter handles database errors gracefully"""
         # Mock the table client to raise an exception
@@ -85,7 +85,7 @@ class TestVisitorCounter(unittest.TestCase):
         )
 
         # Mock environment variable
-        with patch.dict(os.environ, {'CosmosDBConnectionString': 'test_connection_string'}):
+        with patch.dict(os.environ, {'COSMOS_CONN_STRING': 'test_connection_string'}):
             response = visitor_count(req)
 
         # Assertions
@@ -95,7 +95,7 @@ class TestVisitorCounter(unittest.TestCase):
     def test_cors_headers_present(self):
         """Test that CORS headers are present in response"""
         with patch('function_app.TableServiceClient'), \
-             patch.dict(os.environ, {'CosmosDBConnectionString': 'test_connection_string'}):
+             patch.dict(os.environ, {'COSMOS_CONN_STRING': 'test_connection_string'}):
 
             req = func.HttpRequest(
                 method='POST',
