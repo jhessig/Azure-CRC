@@ -6,7 +6,7 @@ import sys
 import os
 
 # Add the parent directory to the path so we can import our function
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../function-app'))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../function-app'))
 from function_app import visitor_count  # Import your function
 
 class TestVisitorCounter(unittest.TestCase):
