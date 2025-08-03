@@ -32,7 +32,7 @@ class TestVisitorCounter(unittest.TestCase):
 
         # Mock environment variable
         with patch.dict(os.environ, {'CosmosDBConnectionString': 'test_connection_string'}):
-            response = main(req)
+            response = visitor_count(req)
 
         # Assertions
         self.assertEqual(response.status_code, 200)
@@ -63,7 +63,7 @@ class TestVisitorCounter(unittest.TestCase):
 
         # Mock environment variable
         with patch.dict(os.environ, {'CosmosDBConnectionString': 'test_connection_string'}):
-            response = main(req)
+            response = visitor_count(req)
 
         # Assertions
         self.assertEqual(response.status_code, 200)
@@ -86,7 +86,7 @@ class TestVisitorCounter(unittest.TestCase):
 
         # Mock environment variable
         with patch.dict(os.environ, {'CosmosDBConnectionString': 'test_connection_string'}):
-            response = main(req)
+            response = visitor_count(req)
 
         # Assertions
         self.assertEqual(response.status_code, 500)
@@ -104,7 +104,7 @@ class TestVisitorCounter(unittest.TestCase):
                 headers={}
             )
 
-            response = main(req)
+            response = visitor_count(req)
 
             # Check CORS headers
             headers = dict(response.headers)
