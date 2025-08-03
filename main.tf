@@ -110,46 +110,6 @@ resource "azurerm_cdn_endpoint" "cdn_endpoint" {
   optimization_type = "GeneralWebDelivery"
 }
 
-resource "azurerm_key_vault_secret" "resource_group" {
-  name            = "${var.env_tag}-resource-group"
-  value           = azurerm_resource_group.rg.name
-  key_vault_id    = data.azurerm_key_vault.key_vault.id
-  content_type    = "text/plain"
-  expiration_date = "2026-12-31T00:00:01Z"
-}
-
-resource "azurerm_key_vault_secret" "storage_account" {
-  name            = "${var.env_tag}-storage-account-name"
-  value           = azurerm_storage_account.storage.name
-  key_vault_id    = data.azurerm_key_vault.key_vault.id
-  content_type    = "text/plain"
-  expiration_date = "2026-12-31T00:00:01Z"
-}
-
-resource "azurerm_key_vault_secret" "storage_key" {
-  name            = "${var.env_tag}-storage-account-key"
-  value           = azurerm_storage_account.storage.primary_access_key
-  key_vault_id    = data.azurerm_key_vault.key_vault.id
-  content_type    = "text/plain"
-  expiration_date = "2026-12-31T00:00:01Z"
-}
-
-resource "azurerm_key_vault_secret" "cdn_profile" {
-  name            = "${var.env_tag}-cdn-profile"
-  value           = azurerm_cdn_profile.cdn_profile.name
-  key_vault_id    = data.azurerm_key_vault.key_vault.id
-  content_type    = "text/plain"
-  expiration_date = "2026-12-31T00:00:01Z"
-}
-
-resource "azurerm_key_vault_secret" "cdn_endpoint" {
-  name            = "${var.env_tag}-cdn-endpoint"
-  value           = azurerm_cdn_endpoint.cdn_endpoint.name
-  key_vault_id    = data.azurerm_key_vault.key_vault.id
-  content_type    = "text/plain"
-  expiration_date = "2026-12-31T00:00:01Z"
-}
-
 resource "azurerm_dns_a_record" "a_root" {
   count               = var.env_tag == "prod" ? 1 : 0
   name                = "@"
@@ -304,11 +264,14 @@ resource "azurerm_linux_function_app" "linux_function-app" {
     COSMOS_KEY                       = azurerm_cosmosdb_account.cosmosdb.secondary_key
     COSMOS_DATABASE_NAME             = "TablesDB"
     COSMOS_CONTAINER_NAME            = azurerm_cosmosdb_table.cosmosdb_table.name
-    COSMOS_CONN_STRING               = "AccountEndpoint=${azurerm_cosmosdb_account.cosmosdb.endpoint};AccountKey=${azurerm_cosmosdb_account.cosmosdb.primary_key};"
+    COSMOS_CONN_STRING               = "DefaultEndpointsProtocol=https;AccountName=${azurerm_cosmosdb_account.cosmosdb.name};AccountEndpoint=${azurerm_cosmosdb_account.cosmosdb.endpoint};AccountKey=${azurerm_cosmosdb_account.cosmosdb.primary_key};TableEndpoint=https://${azurerm_cosmosdb_account.cosmosdb.name}.table.cosmos.azure.com:443/"
   }
   site_config {
     application_stack {
-      python_version = "3.9"
+      python_version = "3.12"
+    }
+    cors {
+      allowed_origins = ["https://portal.azure.com", "https://${azurerm_cdn_endpoint.cdn_endpoint.name}.azureedge.net", "https://www.${var.sld_name}.${var.tld_name}"]
     }
   }
   zip_deploy_file = data.archive_file.function.output_path
@@ -333,6 +296,54 @@ resource "azurerm_cdn_endpoint_custom_domain" "root" {
   host_name       = "${var.sld_name}.${var.tld_name}"
   cdn_endpoint_id = azurerm_cdn_endpoint.cdn_endpoint.id
   depends_on      = [azurerm_dns_cname_record.cdn_cname]
+}
+
+resource "azurerm_key_vault_secret" "resource_group" {
+  name            = "${var.env_tag}-resource-group"
+  value           = azurerm_resource_group.rg.name
+  key_vault_id    = data.azurerm_key_vault.key_vault.id
+  content_type    = "text/plain"
+  expiration_date = "2026-12-31T00:00:01Z"
+}
+
+resource "azurerm_key_vault_secret" "storage_account" {
+  name            = "${var.env_tag}-storage-account-name"
+  value           = azurerm_storage_account.storage.name
+  key_vault_id    = data.azurerm_key_vault.key_vault.id
+  content_type    = "text/plain"
+  expiration_date = "2026-12-31T00:00:01Z"
+}
+
+resource "azurerm_key_vault_secret" "storage_key" {
+  name            = "${var.env_tag}-storage-account-key"
+  value           = azurerm_storage_account.storage.primary_access_key
+  key_vault_id    = data.azurerm_key_vault.key_vault.id
+  content_type    = "text/plain"
+  expiration_date = "2026-12-31T00:00:01Z"
+}
+
+resource "azurerm_key_vault_secret" "cdn_profile" {
+  name            = "${var.env_tag}-cdn-profile"
+  value           = azurerm_cdn_profile.cdn_profile.name
+  key_vault_id    = data.azurerm_key_vault.key_vault.id
+  content_type    = "text/plain"
+  expiration_date = "2026-12-31T00:00:01Z"
+}
+
+resource "azurerm_key_vault_secret" "cdn_endpoint" {
+  name            = "${var.env_tag}-cdn-endpoint"
+  value           = azurerm_cdn_endpoint.cdn_endpoint.name
+  key_vault_id    = data.azurerm_key_vault.key_vault.id
+  content_type    = "text/plain"
+  expiration_date = "2026-12-31T00:00:01Z"
+}
+
+resource "azurerm_key_vault_secret" "api_url" {
+  name            = "${var.env_tag}-api-url"
+  value           = "${azurerm_linux_function_app.linux_function-app.name}.azurewebsites.net"
+  key_vault_id    = data.azurerm_key_vault.key_vault.id
+  content_type    = "text/plain"
+  expiration_date = "2026-12-31T00:00:01Z"
 }
 
 output "storage_url" {

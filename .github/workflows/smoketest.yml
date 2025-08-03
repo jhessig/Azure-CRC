@@ -81,6 +81,13 @@ jobs:
         with:
           creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
 
+      - name: "Replace API URL in javascript"
+        run: |
+          ENV_API_URL=$(az keyvault secret show \
+            --name "${{ steps.extract_branch.outputs.branch }}-api-url" \
+            --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
+          sed -i "s|{{API_URL}}|$ENV_API_URL|g" ./frontend-repo/resume.js
+
       - name: "Upload to blob storage"
         uses: azure/cli@v2
         with:
