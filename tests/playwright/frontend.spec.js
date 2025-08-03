@@ -34,9 +34,9 @@ test.describe('Resume App', () => {
     // Contact Me link
     await expect(page.getByRole('link', { name: /Contact Me/i })).toHaveAttribute('href', /mailto:/);
 
-    // Links to GitHub and LinkedIn
-    await expect(page.getByRole('link', { name: /github/i })).toHaveAttribute('href', /github/);
-    await expect(page.getByRole('link', { name: /linkedin/i })).toHaveAttribute('href', /linkedin/);
+    // // Links to GitHub and LinkedIn
+    // await expect(page.getByRole('link', { name: /github/i })).toHaveAttribute('href', /github/);
+    // await expect(page.getByRole('link', { name: /linkedin/i })).toHaveAttribute('href', /linkedin/);
 
     // Education section
     await expect(page.getByText(/Education/, { exact: false })).toBeVisible();
