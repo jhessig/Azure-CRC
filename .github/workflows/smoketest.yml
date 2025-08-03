@@ -163,21 +163,15 @@ jobs:
           OUTPUT=$(terraform output -raw storage_url)
           echo "SITE_URL=$OUTPUT" >> $GITHUB_ENV
 
-      - name: "Run Playwright Tests"
-        run: npx playwright test
-
       - name: "Set API URL as env var"
         run: |
           OUTPUT=$(terraform output -raw api_url)
           echo "API_URL=$OUTPUT" >> $GITHUB_ENV
 
-      - name: "Run Cypress smoke tests"
-        uses: cypress-io/github-action@v5
-        with:
-          wait-on: "${{ vars.API_URL }}"
-          wait-on-timeout: 120
-        env:
-          CYPRESS_API_URL: "${{ vars.API_URL }}"
+      - name: "Run Playwright Tests"
+        run: npx playwright test
+
+
 
 #      - name: "Upload Artifact"
 #        uses: actions/upload-artifact@v4
