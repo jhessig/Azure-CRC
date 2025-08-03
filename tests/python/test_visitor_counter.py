@@ -92,24 +92,40 @@ class TestVisitorCounter(unittest.TestCase):
         self.assertEqual(response.status_code, 500)
         self.assertIn("Error", response.get_body().decode())
 
-    def test_cors_headers_present(self):
+
+    @patch('function_app.TableServiceClient')
+    def test_cors_headers_present(self, mock_table_service):
         """Test that CORS headers are present in response"""
-        with patch('function_app.TableServiceClient'), \
-             patch.dict(os.environ, {'COSMOS_CONN_STRING': 'test_connection_string'}):
+        # Mock the table client
+        mock_table_client = MagicMock()
+        mock_table_service.from_connection_string.return_value.get_table_client.return_value = mock_table_client
 
-            req = func.HttpRequest(
-                method='POST',
-                body=b'',
-                url='https://test.com/api/visitor-count',
-                headers={}
-            )
+        # Simulate no existing entity
+        from azure.core.exceptions import ResourceNotFoundError
+        mock_table_client.get_entity.side_effect = ResourceNotFoundError("Entity not found")
 
+        # Create mock request
+        req = func.HttpRequest(
+            method='POST',
+            body=b'',
+            url='https://test.com/api/visitor-count',
+            headers={}
+        )
+
+        # Mock environment variable
+        with patch.dict(os.environ, {'COSMOS_CONN_STRING': 'test_connection_string'}):
             response = visitor_count(req)
 
-            # Check CORS headers
-            headers = dict(response.headers)
-            self.assertIn('Access-Control-Allow-Origin', headers)
-            self.assertEqual(headers['Content-Type'], 'application/json')
+        # Debug: Print response details
+        print(f"Response status: {response.status_code}")
+        print(f"Response headers: {dict(response.headers)}")
+        print(f"Response body: {response.get_body().decode()}")
+
+        # Assertions
+        self.assertEqual(response.status_code, 200)
+        headers = dict(response.headers)
+        self.assertIn('Access-Control-Allow-Origin', headers)
+        self.assertEqual(headers['Content-Type'], 'application/json')
 
 if __name__ == '__main__':
     unittest.main()
