@@ -9,7 +9,7 @@ on:
 
 jobs:
   smoketest:
-    name: 'Smoke Test'
+    name: "Smoke Test"
     runs-on: ubuntu-latest
     env:
       ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
@@ -22,25 +22,47 @@ jobs:
       KEY_VAULT_NAME: ${{ secrets.KEY_VAULT_NAME }}
       FRONTEND_REPO: ${{ vars.FRONTEND_REPO }}
     steps:
-      - name: 'Extract branch name'
+      - name: "Extract branch name"
         shell: bash
         run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
         id: extract_branch
 
-      - name: 'Checkout'
+      - name: "Checkout"
         uses: actions/checkout@v4
+      ### Unit Testing
+      - name: "Run Checkov"
+        id: checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          framework: terraform
 
-      - name: 'Setup Terraform'
+      - name: "Set up Python"
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: "Install dependencies"
+        run: |
+          pip install -r function-app/requirements.txt
+          pip install -r tests/python/test_requirements.txt
+
+      - name: "Run unit tests"
+        run: |
+          python -m pytest tests/python/ -v --tb=short
+
+      - name: "Generate coverage report"
+        run: |
+          pip install coverage
+          coverage run -m pytest tests/
+          coverage report -m
+
+      ### Setup and Build
+      - name: "Setup Terraform"
         uses: hashicorp/setup-terraform@v1
         with:
           terraform_wrapper: false
 
-      - name: "Setup Node"
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-
-      - name: 'Terraform Initialize'
+      - name: "Terraform Initialize"
         run: terraform init -backend-config="storage_account_name=$STORAGE_ACCOUNT" -backend-config="container_name=$CONTAINER_NAME" -backend-config="resource_group_name=$RESOURCE_GROUP" -backend-config="key=github-${{ steps.extract_branch.outputs.branch }}.terraform.tfstate"
 
       - name: "Terraform Validate"
@@ -58,15 +80,10 @@ jobs:
       - name: "Inspect Terraform Output"
         run: terraform output storage_url
 
-      - name: "Set CDN URL as env var"
-        run: |
-          OUTPUT=$(terraform output -raw storage_url)
-          echo "SITE_URL=$OUTPUT" >> $GITHUB_ENV
-
-      - name: "Set environment tag"
-        run: |
-          OUTPUT=$(terraform output -raw env_tag)
-          echo "ENV_TAG=$OUTPUT" >> $GITHUB_ENV
+#      - name: "Set environment tag"
+#        run: |
+#          OUTPUT=$(terraform output -raw env_tag)
+#          echo "ENV_TAG=$OUTPUT" >> $GITHUB_ENV
 
       - name: "Checkout"
         uses: actions/checkout@v4
@@ -125,6 +142,12 @@ jobs:
               --name "$CDN_ENDPOINT" \
               --resource-group "$RESOURCE_GROUP"
 
+      ### E2E Testing
+      - name: "Setup Node"
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
       - name: "Install Package Lock Only"
         run: npm install --package-lock-only
 
@@ -134,14 +157,20 @@ jobs:
       - name: "Install Playwright Browsers"
         run: npx playwright install --with-deps
 
-      - name: "Run Tests"
+      - name: "Set CDN URL as env var"
+        run: |
+          OUTPUT=$(terraform output -raw storage_url)
+          echo "SITE_URL=$OUTPUT" >> $GITHUB_ENV
+
+      - name: "Set API URL as env var"
+        run: |
+          OUTPUT=$(terraform output -raw api_url)
+          echo "API_URL=$OUTPUT" >> $GITHUB_ENV
+
+      - name: "Run Playwright Tests"
         run: npx playwright test
 
-      - name: "Run Checkov"
-        id: checkov
-        uses: bridgecrewio/checkov-action@master
-        with:
-          framework: terraform
+
 
 #      - name: "Upload Artifact"
 #        uses: actions/upload-artifact@v4
