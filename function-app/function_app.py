@@ -5,7 +5,7 @@ from azure.data.tables import TableServiceClient
 from azure.core.exceptions import ResourceNotFoundError
 
 app = func.FunctionApp()
-@app.route(route="visitor_count", auth_level=func.AuthLevel.FUNCTION)
+@app.route(route="visitor_count", auth_level=func.AuthLevel.ANONYMOUS)
 def visitor_count(req: func.HttpRequest) -> func.HttpResponse:
     try:
         # Get connection string
