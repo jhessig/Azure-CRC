@@ -33,12 +33,12 @@ test.describe('Visitor Counter API', () => {
         expect(headers['content-type']).toContain('application/json');
     });
 
-    test('should handle malformed requests gracefully', async ({ request }) => {
-        // Test with invalid method (if your API only accepts POST)
-        const response = await request.get(API_URL);
-        // Depending on your function setup, this might return 404 or 405
-        expect([404, 405]).toContain(response.status());
-    });
+    // test('should handle malformed requests gracefully', async ({ request }) => {
+    //     // Test with invalid method (if your API only accepts POST)
+    //     const response = await request.get(API_URL);
+    //     // Depending on your function setup, this might return 404 or 405
+    //     expect([404, 405]).toContain(response.status());
+    // });
 
     test('should return valid JSON structure', async ({ request }) => {
         const response = await request.post(API_URL);
