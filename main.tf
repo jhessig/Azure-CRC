@@ -271,7 +271,7 @@ resource "azurerm_linux_function_app" "linux_function-app" {
       python_version = "3.12"
     }
     cors {
-      allowed_origins = ["https://portal.azure.com"]
+      allowed_origins = ["https://portal.azure.com", "https://${azurerm_cdn_endpoint.cdn_endpoint.name}.azureedge.net", "https://www.${var.sld_name}.${var.tld_name}"]
     }
   }
   zip_deploy_file = data.archive_file.function.output_path
