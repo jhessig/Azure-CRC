@@ -351,6 +351,11 @@ output "storage_url" {
   sensitive = true
 }
 
+output "api_url" {
+  value     = "https://${azurerm_linux_function_app.linux_function-app.name}.azurewebsites.net/api/visitor_count"
+  sensitive = true
+}
+
 output "env_tag" {
   value = var.env_tag
 }
