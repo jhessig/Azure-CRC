@@ -104,7 +104,7 @@ jobs:
             --name "${{ steps.extract_branch.outputs.branch }}-api-url" \
             --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
           sed -i "s|{{API_URL}}|$ENV_API_URL|g" ./frontend-repo/resume.js
-          sed -i "s|{{API_URL}}|$ENV_API_URL|g" ./tests/cypress/test_visitor_counter.js
+          sed -i "s|{{API_URL}}|$ENV_API_URL|g" ./tests/cypress/visitor_counter_spec.js
 
       - name: "Upload to blob storage"
         uses: azure/cli@v2
