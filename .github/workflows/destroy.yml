@@ -14,6 +14,9 @@ jobs:
       RESOURCE_GROUP: ${{ secrets.RESOURCE_GROUP }}
       STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
       CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
+      ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+      WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+      ALERT_SMS: ${{ secrets.ALERT_SMS }}
       KEY_VAULT_NAME: ${{ secrets.KEY_VAULT_NAME }}
     steps:
       - name: 'Checkout'
@@ -39,4 +42,4 @@ jobs:
 
       - name: "Terraform Destroy"
         if: always()
-        run: terraform destroy -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -auto-approve
+        run: terraform destroy -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -var="alert_email=$ALERT_EMAIL" -var="webhook_url=$WEBHOOK_URL" -var="alert_sms=$ALERT_SMS" -auto-approve

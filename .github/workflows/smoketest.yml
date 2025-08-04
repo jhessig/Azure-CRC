@@ -20,6 +20,9 @@ jobs:
       STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
       CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
       KEY_VAULT_NAME: ${{ secrets.KEY_VAULT_NAME }}
+      ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+      WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+      ALERT_SMS: ${{ secrets.ALERT_SMS }}
       FRONTEND_REPO: ${{ vars.FRONTEND_REPO }}
     steps:
       - name: "Extract branch name"
@@ -72,10 +75,10 @@ jobs:
         run: terraform fmt -check
 
       - name: "Terraform Plan"
-        run: terraform plan -no-color -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP"
+        run: terraform plan -no-color -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -var="alert_email=$ALERT_EMAIL" -var="webhook_url=$WEBHOOK_URL" -var="alert_sms=$ALERT_SMS"
 
       - name: "Terraform Apply"
-        run: terraform apply -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -auto-approve -input=false
+        run: terraform apply -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -var="alert_email=$ALERT_EMAIL" -var="webhook_url=$WEBHOOK_URL" -var="alert_sms=$ALERT_SMS" -auto-approve -input=false
 
       - name: "Inspect Terraform Output"
         run: terraform output storage_url
@@ -160,11 +163,13 @@ jobs:
       - name: "Set CDN URL as env var"
         run: |
           OUTPUT=$(terraform output -raw storage_url)
+          echo "::add-mask::$OUTPUT"
           echo "SITE_URL=$OUTPUT" >> $GITHUB_ENV
 
       - name: "Set API URL as env var"
         run: |
           OUTPUT=$(terraform output -raw api_url)
+          echo "::add-mask::$OUTPUT"
           echo "API_URL=$OUTPUT" >> $GITHUB_ENV
 
       - name: "Run Playwright Tests"
@@ -179,7 +184,3 @@ jobs:
 #          name: playwright-report
 #          path: playwright-report/
 #          retention-days: 30
-
-#      - name: "Terraform Destroy"
-#        if: always()
-#        run: terraform destroy -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -auto-approve
