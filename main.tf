@@ -316,7 +316,7 @@ resource "azurerm_monitor_metric_alert" "function_failures" {
     operator         = "GreaterThan"
     threshold        = 10
     dimension {
-      name     = "Status"
+      name     = "Instance"
       operator = "Include"
       values   = ["Failed"]
     }
