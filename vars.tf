@@ -34,6 +34,6 @@ variable "webhook_url" {
   description = "Webhook for Monitor alerts"
 }
 
-variable "alert_sms"{
+variable "alert_sms" {
   description = "Phone number for SMS alerts."
 }

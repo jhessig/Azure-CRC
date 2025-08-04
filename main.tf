@@ -287,8 +287,8 @@ resource "azurerm_monitor_action_group" "api_group" {
     email_address = var.alert_email
   }
   webhook_receiver {
-    name        = "webhook"
-    service_uri = var.webhook_url # Configure this for PagerDuty/Slack
+    name                    = "webhook"
+    service_uri             = var.webhook_url # Configure this for PagerDuty/Slack
     use_common_alert_schema = true
   }
   sms_receiver {
