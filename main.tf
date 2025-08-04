@@ -292,7 +292,7 @@ resource "azurerm_linux_function_app" "linux_function_app" {
 ### Monitoring
 resource "azurerm_monitor_action_group" "api_group" {
   name                = "${var.resource_group_name}-${var.env_tag}-actiongroup"
-  resource_group_name = azurerm_resource_group.api_rg
+  resource_group_name = azurerm_resource_group.api_rg.name
   short_name          = "crcalerts"
   email_receiver {
     name          = "admin"
