@@ -39,4 +39,4 @@ jobs:
 
       - name: "Terraform Destroy"
         if: always()
-        run: terraform destroy -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -auto-approve
+        run: terraform destroy -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -var="alert_email=$ALERT_EMAIL" -var="webhook_url=$WEBHOOK_URL" -auto-approve

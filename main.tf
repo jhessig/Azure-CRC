@@ -245,7 +245,15 @@ data "archive_file" "function" {
   output_path = "${path.module}/functions.zip"
 }
 
-resource "azurerm_linux_function_app" "linux_function-app" {
+resource "azurerm_application_insights" "main" {
+  name                = "${var.resource_group_name}-${var.env_tag}-appinsights"
+  location            = var.azure_region
+  resource_group_name = azurerm_resource_group.api_rg.name
+  application_type    = "web"
+  #tags = var.tags
+}
+
+resource "azurerm_linux_function_app" "linux_function_app" {
   #checkov:skip=CKV_AZURE_221: "Ensure that Azure Function App public network access is disabled" Review public access TODO
   name                          = "${var.resource_group_name}-${var.env_tag}-function-${random_string.build_id.result}"
   resource_group_name           = azurerm_resource_group.api_rg.name
@@ -260,11 +268,15 @@ resource "azurerm_linux_function_app" "linux_function-app" {
     "SCM_DO_BUILD_DURING_DEPLOYMENT" = "true"
     "FUNCTIONS_WORKER_RUNTIME"       = "python"
     "AzureWebJobsFeatureFlags"       = "EnableWorkerIndexing"
+    "APPINSIGHTS_INSTRUMENTATIONKEY" = azurerm_application_insights.main.instrumentation_key
+    "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.main.connection_string
+    "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
     COSMOS_ENDPOINT                  = azurerm_cosmosdb_account.cosmosdb.endpoint
     COSMOS_KEY                       = azurerm_cosmosdb_account.cosmosdb.secondary_key
     COSMOS_DATABASE_NAME             = "TablesDB"
     COSMOS_CONTAINER_NAME            = azurerm_cosmosdb_table.cosmosdb_table.name
     COSMOS_CONN_STRING               = "DefaultEndpointsProtocol=https;AccountName=${azurerm_cosmosdb_account.cosmosdb.name};AccountEndpoint=${azurerm_cosmosdb_account.cosmosdb.endpoint};AccountKey=${azurerm_cosmosdb_account.cosmosdb.primary_key};TableEndpoint=https://${azurerm_cosmosdb_account.cosmosdb.name}.table.cosmos.azure.com:443/"
+
   }
   site_config {
     application_stack {
@@ -275,6 +287,83 @@ resource "azurerm_linux_function_app" "linux_function-app" {
     }
   }
   zip_deploy_file = data.archive_file.function.output_path
+}
+
+### Monitoring
+resource "azurerm_monitor_action_group" "api_group" {
+  name                = "${var.resource_group_name}-${var.env_tag}-actiongroup"
+  resource_group_name = azurerm_resource_group.api_rg
+  short_name          = "crcalerts"
+  email_receiver {
+    name          = "admin"
+    email_address = var.alert_email
+  }
+  webhook_receiver {
+    name        = "webhook"
+    service_uri = var.webhook_url # Configure this for PagerDuty/Slack
+  }
+}
+
+resource "azurerm_monitor_metric_alert" "function_failures" {
+  name                = "${var.resource_group_name}-${var.env_tag}-function-failures"
+  resource_group_name = azurerm_resource_group.api_rg.name
+  scopes              = [azurerm_linux_function_app.linux_function_app.id]
+  description         = "Alert when function invocations fail"
+  criteria {
+    metric_namespace = "Microsoft.Web/sites"
+    metric_name      = "FunctionExecutionCount"
+    aggregation      = "Total"
+    operator         = "GreaterThan"
+    threshold        = 10
+    dimension {
+      name     = "Status"
+      operator = "Include"
+      values   = ["Failed"]
+    }
+  }
+  action {
+    action_group_id = azurerm_monitor_action_group.api_group.id
+  }
+  frequency   = "PT1M"
+  window_size = "PT5M"
+}
+
+resource "azurerm_monitor_metric_alert" "high_latency" {
+  name                = "${var.resource_group_name}-${var.env_tag}-high-latency"
+  resource_group_name = azurerm_resource_group.api_rg.name
+  scopes              = [azurerm_linux_function_app.linux_function_app.id]
+  description         = "Alert when function response time is high"
+  criteria {
+    metric_namespace = "Microsoft.Web/sites"
+    metric_name      = "AverageResponseTime"
+    aggregation      = "Average"
+    operator         = "GreaterThan"
+    threshold        = 5000 # 5 seconds in milliseconds
+  }
+  action {
+    action_group_id = azurerm_monitor_action_group.api_group.id
+  }
+  frequency   = "PT1M"
+  window_size = "PT5M"
+}
+
+resource "azurerm_monitor_metric_alert" "high_request_volume" {
+  name                = "${var.resource_group_name}-${var.env_tag}-high-volume"
+  resource_group_name = azurerm_resource_group.api_rg.name
+  scopes              = [azurerm_linux_function_app.linux_function_app.id]
+  description         = "Alert on unusually high request volume"
+  criteria {
+    metric_namespace = "Microsoft.Web/sites"
+    metric_name      = "Requests"
+    aggregation      = "Total"
+    operator         = "GreaterThan"
+    threshold        = 100 # Adjust based on your expected traffic
+  }
+  action {
+    action_group_id = azurerm_monitor_action_group.api_group.id
+  }
+  frequency   = "PT1M"
+  window_size = "PT5M"
 }
 
 ### Set CDN custom domains.
@@ -340,7 +429,7 @@ resource "azurerm_key_vault_secret" "cdn_endpoint" {
 
 resource "azurerm_key_vault_secret" "api_url" {
   name            = "${var.env_tag}-api-url"
-  value           = "${azurerm_linux_function_app.linux_function-app.name}.azurewebsites.net"
+  value           = "${azurerm_linux_function_app.linux_function_app.name}.azurewebsites.net"
   key_vault_id    = data.azurerm_key_vault.key_vault.id
   content_type    = "text/plain"
   expiration_date = "2026-12-31T00:00:01Z"
@@ -352,7 +441,7 @@ output "storage_url" {
 }
 
 output "api_url" {
-  value     = "https://${azurerm_linux_function_app.linux_function-app.name}.azurewebsites.net/api/visitor_count"
+  value     = "https://${azurerm_linux_function_app.linux_function_app.name}.azurewebsites.net/api/visitor_count"
   sensitive = true
 }
 
