@@ -245,14 +245,6 @@ data "archive_file" "function" {
   output_path = "${path.module}/functions.zip"
 }
 
-resource "azurerm_application_insights" "main" {
-  name                = "${var.resource_group_name}-${var.env_tag}-appinsights"
-  location            = var.azure_region
-  resource_group_name = azurerm_resource_group.api_rg.name
-  application_type    = "web"
-  #tags = var.tags
-}
-
 resource "azurerm_linux_function_app" "linux_function_app" {
   #checkov:skip=CKV_AZURE_221: "Ensure that Azure Function App public network access is disabled" Review public access TODO
   name                          = "${var.resource_group_name}-${var.env_tag}-function-${random_string.build_id.result}"
@@ -268,15 +260,11 @@ resource "azurerm_linux_function_app" "linux_function_app" {
     "SCM_DO_BUILD_DURING_DEPLOYMENT"             = "true"
     "FUNCTIONS_WORKER_RUNTIME"                   = "python"
     "AzureWebJobsFeatureFlags"                   = "EnableWorkerIndexing"
-    "APPINSIGHTS_INSTRUMENTATIONKEY"             = azurerm_application_insights.main.instrumentation_key
-    "APPLICATIONINSIGHTS_CONNECTION_STRING"      = azurerm_application_insights.main.connection_string
-    "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
     COSMOS_ENDPOINT                              = azurerm_cosmosdb_account.cosmosdb.endpoint
     COSMOS_KEY                                   = azurerm_cosmosdb_account.cosmosdb.secondary_key
     COSMOS_DATABASE_NAME                         = "TablesDB"
     COSMOS_CONTAINER_NAME                        = azurerm_cosmosdb_table.cosmosdb_table.name
     COSMOS_CONN_STRING                           = "DefaultEndpointsProtocol=https;AccountName=${azurerm_cosmosdb_account.cosmosdb.name};AccountEndpoint=${azurerm_cosmosdb_account.cosmosdb.endpoint};AccountKey=${azurerm_cosmosdb_account.cosmosdb.primary_key};TableEndpoint=https://${azurerm_cosmosdb_account.cosmosdb.name}.table.cosmos.azure.com:443/"
-
   }
   site_config {
     application_stack {
