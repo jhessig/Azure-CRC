@@ -20,6 +20,9 @@ jobs:
       STORAGE_ACCOUNT: ${{ secrets.STORAGE_ACCOUNT }}
       CONTAINER_NAME: ${{ secrets.CONTAINER_NAME }}
       KEY_VAULT_NAME: ${{ secrets.KEY_VAULT_NAME }}
+      ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+      WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+      ALERT_SMS: ${{ secrets.ALERT_SMS }}
       FRONTEND_REPO: ${{ vars.FRONTEND_REPO }}
     steps:
       - name: 'Checkout'
@@ -35,11 +38,11 @@ jobs:
       #  run: terraform fmt -check
 
       - name: Terraform Plan
-        run: terraform plan -no-color -var="env_tag=${{ 'prod' }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP"
+        run: terraform plan -no-color -var="env_tag=${{ 'prod' }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -var="alert_email=$ALERT_EMAIL" -var="webhook_url=$WEBHOOK_URL" -var="alert_sms=$ALERT_SMS"
 
       - name: Terraform Apply
         #if: github.ref == 'refs/heads/"master"' && github.event_name == 'push'
-        run: terraform apply -var="env_tag=${{ 'prod' }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -auto-approve -input=false
+        run: terraform apply -var="env_tag=${{ 'prod' }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -var="alert_email=$ALERT_EMAIL" -var="webhook_url=$WEBHOOK_URL" -var="alert_sms=$ALERT_SMS" -auto-approve -input=false
 
       - name: "Checkout"
         uses: actions/checkout@v4
@@ -57,7 +60,7 @@ jobs:
       - name: "Replace API URL in javascript"
         run: |
           ENV_API_URL=$(az keyvault secret show \
-            --name "${{ steps.extract_branch.outputs.branch }}-api-url" \
+            --name "prod-api-url" \
             --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
           sed -i "s|{{API_URL}}|$ENV_API_URL|g" ./frontend-repo/resume.js
 

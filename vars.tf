@@ -11,7 +11,7 @@ variable "resource_group_name" {
 }
 
 variable "azure_region" {
-  default = "Canada Central"
+  default = "Central US"
 }
 
 variable "env_tag" {
@@ -24,4 +24,16 @@ variable "key_vault_name" {
 
 variable "key_vault_rg" {
   description = "Key Vault Resource Group"
+}
+
+variable "alert_email" {
+  description = "E-mail address for Monitor alerts"
+}
+
+variable "webhook_url" {
+  description = "Webhook for Monitor alerts"
+}
+
+variable "alert_sms" {
+  description = "Phone number for SMS alerts."
 }
