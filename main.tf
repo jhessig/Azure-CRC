@@ -120,20 +120,20 @@ resource "cloudflare_ruleset" "apex_redirect" {
   kind    = "zone"
   name    = "apex redirect"
   phase   = "http_request_dynamic_redirect"
-  rules {
+  rules = [{
     action      = "redirect"
     expression  = "(lower(http.host) eq \"${var.domain_name}\")"
     description = "Redirect apex domain to www subdomain"
     enabled     = true
-    action_parameters {
-      from_value {
+    action_parameters = {
+      from_value = {
         status_code = 301
-        target_url {
+        target_url = {
           expression = "concat(\"https://\",\"www.${var.domain_name}\",http.request.uri.path)"
         }
       }
     }
-  }
+  }]
 }
 
 ### Set up API.
