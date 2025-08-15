@@ -23,6 +23,7 @@ jobs:
       ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
       WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
       ALERT_SMS: ${{ secrets.ALERT_SMS }}
+      CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
       FRONTEND_REPO: ${{ vars.FRONTEND_REPO }}
     steps:
       - name: "Extract branch name"
@@ -75,10 +76,10 @@ jobs:
         run: terraform fmt -check
 
       - name: "Terraform Plan"
-        run: terraform plan -no-color -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -var="alert_email=$ALERT_EMAIL" -var="webhook_url=$WEBHOOK_URL" -var="alert_sms=$ALERT_SMS"
+        run: terraform plan -no-color -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -var="alert_email=$ALERT_EMAIL" -var="webhook_url=$WEBHOOK_URL" -var="alert_sms=$ALERT_SMS" -var="clouflare_api_token=$CLOUDFLARE_TOKEN"
 
       - name: "Terraform Apply"
-        run: terraform apply -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -var="alert_email=$ALERT_EMAIL" -var="webhook_url=$WEBHOOK_URL" -var="alert_sms=$ALERT_SMS" -auto-approve -input=false
+        run: terraform apply -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -var="alert_email=$ALERT_EMAIL" -var="webhook_url=$WEBHOOK_URL" -var="alert_sms=$ALERT_SMS" -var="clouflare_api_token=$CLOUDFLARE_TOKEN" -auto-approve -input=false
 
       - name: "Inspect Terraform Output"
         run: terraform output storage_url
@@ -126,25 +127,6 @@ jobs:
               --source ./frontend-repo \
               --overwrite
 
-      - name: "Purge CDN endpoint"
-        uses: azure/cli@v2
-        with:
-          inlineScript: |
-            CDN_PROFILE=$(az keyvault secret show \
-              --name "${{ steps.extract_branch.outputs.branch }}-cdn-profile" \
-              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
-            CDN_ENDPOINT=$(az keyvault secret show \
-              --name "${{ steps.extract_branch.outputs.branch }}-cdn-endpoint" \
-              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)
-            RESOURCE_GROUP=$(az keyvault secret show \
-              --name "${{ steps.extract_branch.outputs.branch }}-resource-group" \
-              --vault-name "${{ secrets.KEY_VAULT_NAME }}" --query value -o tsv)        
-            az cdn endpoint purge \
-              --content-paths "/*" \
-              --profile-name "$CDN_PROFILE" \
-              --name "$CDN_ENDPOINT" \
-              --resource-group "$RESOURCE_GROUP"
-
       ### E2E Testing
       - name: "Setup Node"
         uses: actions/setup-node@v4
@@ -160,7 +142,7 @@ jobs:
       - name: "Install Playwright Browsers"
         run: npx playwright install --with-deps
 
-      - name: "Set CDN URL as env var"
+      - name: "Set Storage URL as env var"
         run: |
           OUTPUT=$(terraform output -raw storage_url)
           echo "::add-mask::$OUTPUT"

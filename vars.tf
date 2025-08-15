@@ -37,3 +37,9 @@ variable "webhook_url" {
 variable "alert_sms" {
   description = "Phone number for SMS alerts."
 }
+
+variable "cloudflare_api_token" {
+  description = "CloudFlare API token for authentication"
+  type        = string
+  sensitive   = true
+}
