@@ -110,6 +110,7 @@ resource "azurerm_cdn_endpoint" "cdn_endpoint" {
   optimization_type = "GeneralWebDelivery"
 }
 
+
 resource "azurerm_dns_a_record" "a_root" {
   count               = var.env_tag == "prod" ? 1 : 0
   name                = "@"
@@ -360,26 +361,27 @@ resource "azurerm_monitor_metric_alert" "high_request_volume" {
   window_size = "PT5M"
 }
 
-### Set CDN custom domains.
-resource "azurerm_cdn_endpoint_custom_domain" "www" {
-  count           = var.env_tag == "prod" ? 1 : 0
-  name            = "www-domain"
-  host_name       = "www.${var.sld_name}.${var.tld_name}"
-  cdn_endpoint_id = azurerm_cdn_endpoint.cdn_endpoint.id
-  cdn_managed_https {
-    certificate_type = "Dedicated"
-    protocol_type    = "ServerNameIndication"
-  }
-  depends_on = [azurerm_dns_cname_record.www_cname]
-}
-
-resource "azurerm_cdn_endpoint_custom_domain" "root" {
-  count           = var.env_tag == "prod" ? 1 : 0
-  name            = "root-domain"
-  host_name       = "${var.sld_name}.${var.tld_name}"
-  cdn_endpoint_id = azurerm_cdn_endpoint.cdn_endpoint.id
-  depends_on      = [azurerm_dns_cname_record.cdn_cname]
-}
+### Disabling due to inconsistency with DNS name server assignment.
+### Manual deployment of endpoint custom domains required after deployment.
+# resource "azurerm_cdn_endpoint_custom_domain" "www" {
+#   count           = var.env_tag == "prod" ? 1 : 0
+#   name            = "www-domain"
+#   host_name       = "www.${var.sld_name}.${var.tld_name}"
+#   cdn_endpoint_id = azurerm_cdn_endpoint.cdn_endpoint.id
+#   cdn_managed_https {
+#     certificate_type = "Dedicated"
+#     protocol_type    = "ServerNameIndication"
+#   }
+#   depends_on = [azurerm_dns_cname_record.www_cname]
+# }
+#
+# resource "azurerm_cdn_endpoint_custom_domain" "root" {
+#   count           = var.env_tag == "prod" ? 1 : 0
+#   name            = "root-domain"
+#   host_name       = "${var.sld_name}.${var.tld_name}"
+#   cdn_endpoint_id = azurerm_cdn_endpoint.cdn_endpoint.id
+#   depends_on      = [azurerm_dns_cname_record.cdn_cname]
+# }
 
 resource "azurerm_key_vault_secret" "resource_group" {
   name            = "${var.env_tag}-resource-group"
