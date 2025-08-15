@@ -5,6 +5,10 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 3.107.0"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5"
+    }
     random = {
       source  = "hashicorp/random"
       version = "3.4.3"
@@ -15,6 +19,10 @@ terraform {
 
 provider "azurerm" {
   features {}
+}
+
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
 }
 
 data "azurerm_key_vault" "key_vault" {
@@ -36,12 +44,7 @@ resource "azurerm_resource_group" "rg" {
   }
 }
 
-resource "azurerm_dns_zone" "zone" {
-  count               = var.env_tag == "prod" ? 1 : 0
-  name                = "${var.sld_name}.${var.tld_name}"
-  resource_group_name = azurerm_resource_group.rg.name
-}
-
+### Manually set custom domain in storage account
 resource "azurerm_storage_account" "storage" {
   #checkov:skip=CKV2_AZURE_1:The storage account is a public static content host.
   #checkov:skip=CKV2_AZURE_33:The storage account is a public static content host.
@@ -88,54 +91,49 @@ resource "azurerm_storage_account" "storage" {
   }
 }
 
-resource "azurerm_cdn_profile" "cdn_profile" {
-  location            = azurerm_resource_group.rg.location
-  name                = "${var.resource_group_name}-${var.env_tag}-cdnpf-${random_string.build_id.result}"
-  resource_group_name = azurerm_resource_group.rg.name
-  sku                 = "Standard_Microsoft"
+### CloudFlare DNS records pointing to Azure Storage
+resource "cloudflare_dns_record" "root_a" {
+  count   = var.env_tag == "prod" ? 1 : 0
+  zone_id = var.cloudflare_zone_id
+  name    = "@"
+  content = "192.0.2.1"
+  type    = "A"
+  proxied = true # Enable CloudFlare proxy (CDN)
+  ttl     = 1    # Auto TTL when proxied
+  comment = "Root domain A record"
 }
 
-resource "azurerm_cdn_endpoint" "cdn_endpoint" {
-  ### AZURE CDN RETIRES September 30, 2027.
-  location            = azurerm_resource_group.rg.location
-  name                = "${var.resource_group_name}-${var.env_tag}-cdnep-${random_string.build_id.result}"
-  profile_name        = azurerm_cdn_profile.cdn_profile.name
-  resource_group_name = azurerm_resource_group.rg.name
-  origin_host_header  = azurerm_storage_account.storage.primary_web_host
-  is_http_allowed     = false
-  origin {
-    host_name = azurerm_storage_account.storage.primary_web_host
-    name      = "${var.resource_group_name}-${var.env_tag}-cdn-origin"
-  }
-  optimization_type = "GeneralWebDelivery"
+resource "cloudflare_dns_record" "www_cname" {
+  count   = var.env_tag == "prod" ? 1 : 0
+  zone_id = var.cloudflare_zone_id
+  name    = "www"
+  content = azurerm_storage_account.storage.primary_web_host
+  type    = "CNAME"
+  ttl     = 60
+  proxied = false #Enable after setting custom domain in storage account
+  comment = "WWW subdomain pointing to Azure Storage via CloudFlare CDN"
 }
 
-
-resource "azurerm_dns_a_record" "a_root" {
-  count               = var.env_tag == "prod" ? 1 : 0
-  name                = "@"
-  zone_name           = azurerm_dns_zone.zone[count.index].name
-  resource_group_name = azurerm_resource_group.rg.name
-  ttl                 = 300
-  target_resource_id  = azurerm_cdn_endpoint.cdn_endpoint.id
-}
-
-resource "azurerm_dns_cname_record" "www_cname" {
-  count               = var.env_tag == "prod" ? 1 : 0
-  name                = "www"
-  zone_name           = azurerm_dns_zone.zone[count.index].name
-  resource_group_name = azurerm_resource_group.rg.name
-  ttl                 = 300
-  record              = azurerm_cdn_endpoint.cdn_endpoint.fqdn
-}
-
-resource "azurerm_dns_cname_record" "cdn_cname" {
-  count               = var.env_tag == "prod" ? 1 : 0
-  name                = "cdnverify"
-  resource_group_name = azurerm_resource_group.rg.name
-  ttl                 = 300
-  zone_name           = azurerm_dns_zone.zone[count.index].name
-  record              = "cdnverify.${azurerm_cdn_endpoint.cdn_endpoint.fqdn}"
+resource "cloudflare_ruleset" "apex_redirect" {
+  count   = var.env_tag == "prod" ? 1 : 0
+  zone_id = var.cloudflare_zone_id
+  kind    = "zone"
+  name    = "apex redirect"
+  phase   = "http_request_dynamic_redirect"
+  rules = [{
+    action      = "redirect"
+    expression  = "(lower(http.host) eq \"${var.domain_name}\")"
+    description = "Redirect apex domain to www subdomain"
+    enabled     = true
+    action_parameters = {
+      from_value = {
+        status_code = 301
+        target_url = {
+          expression = "concat(\"https://\",\"www.${var.domain_name}\",http.request.uri.path)"
+        }
+      }
+    }
+  }]
 }
 
 ### Set up API.
@@ -272,7 +270,7 @@ resource "azurerm_linux_function_app" "linux_function_app" {
       python_version = "3.12"
     }
     cors {
-      allowed_origins = ["https://portal.azure.com", "https://${azurerm_cdn_endpoint.cdn_endpoint.name}.azureedge.net", "https://www.${var.sld_name}.${var.tld_name}"]
+      allowed_origins = ["https://portal.azure.com", "https://www.${var.domain_name}"]
     }
   }
   zip_deploy_file = data.archive_file.function.output_path
@@ -361,28 +359,6 @@ resource "azurerm_monitor_metric_alert" "high_request_volume" {
   window_size = "PT5M"
 }
 
-### Disabling due to inconsistency with DNS name server assignment.
-### Manual deployment of endpoint custom domains required after deployment.
-# resource "azurerm_cdn_endpoint_custom_domain" "www" {
-#   count           = var.env_tag == "prod" ? 1 : 0
-#   name            = "www-domain"
-#   host_name       = "www.${var.sld_name}.${var.tld_name}"
-#   cdn_endpoint_id = azurerm_cdn_endpoint.cdn_endpoint.id
-#   cdn_managed_https {
-#     certificate_type = "Dedicated"
-#     protocol_type    = "ServerNameIndication"
-#   }
-#   depends_on = [azurerm_dns_cname_record.www_cname]
-# }
-#
-# resource "azurerm_cdn_endpoint_custom_domain" "root" {
-#   count           = var.env_tag == "prod" ? 1 : 0
-#   name            = "root-domain"
-#   host_name       = "${var.sld_name}.${var.tld_name}"
-#   cdn_endpoint_id = azurerm_cdn_endpoint.cdn_endpoint.id
-#   depends_on      = [azurerm_dns_cname_record.cdn_cname]
-# }
-
 resource "azurerm_key_vault_secret" "resource_group" {
   name            = "${var.env_tag}-resource-group"
   value           = azurerm_resource_group.rg.name
@@ -402,22 +378,6 @@ resource "azurerm_key_vault_secret" "storage_account" {
 resource "azurerm_key_vault_secret" "storage_key" {
   name            = "${var.env_tag}-storage-account-key"
   value           = azurerm_storage_account.storage.primary_access_key
-  key_vault_id    = data.azurerm_key_vault.key_vault.id
-  content_type    = "text/plain"
-  expiration_date = "2026-12-31T00:00:01Z"
-}
-
-resource "azurerm_key_vault_secret" "cdn_profile" {
-  name            = "${var.env_tag}-cdn-profile"
-  value           = azurerm_cdn_profile.cdn_profile.name
-  key_vault_id    = data.azurerm_key_vault.key_vault.id
-  content_type    = "text/plain"
-  expiration_date = "2026-12-31T00:00:01Z"
-}
-
-resource "azurerm_key_vault_secret" "cdn_endpoint" {
-  name            = "${var.env_tag}-cdn-endpoint"
-  value           = azurerm_cdn_endpoint.cdn_endpoint.name
   key_vault_id    = data.azurerm_key_vault.key_vault.id
   content_type    = "text/plain"
   expiration_date = "2026-12-31T00:00:01Z"
