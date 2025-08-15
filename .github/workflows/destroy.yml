@@ -39,8 +39,22 @@ jobs:
         id: extract_branch
 
       - name: 'Terraform Initialize'
-        run: terraform init -backend-config="storage_account_name=$STORAGE_ACCOUNT" -backend-config="container_name=$CONTAINER_NAME" -backend-config="resource_group_name=$RESOURCE_GROUP" -backend-config="key=github-${{ steps.extract_branch.outputs.branch }}.terraform.tfstate"
+        run: |
+          terraform init -backend-config="storage_account_name=$STORAGE_ACCOUNT" \
+            -backend-config="container_name=$CONTAINER_NAME" \
+            -backend-config="resource_group_name=$RESOURCE_GROUP" \
+            -backend-config="key=github-${{ steps.extract_branch.outputs.branch }}.terraform.tfstate"
 
       - name: "Terraform Destroy"
         if: always()
-        run: terraform destroy -var="env_tag=${{ steps.extract_branch.outputs.branch }}" -var="key_vault_name=$KEY_VAULT_NAME" -var="key_vault_rg=$RESOURCE_GROUP" -var="alert_email=$ALERT_EMAIL" -var="webhook_url=$WEBHOOK_URL" -var="alert_sms=$ALERT_SMS" -var="clouflare_api_token=$CLOUDFLARE_TOKEN" -auto-approve
+        run: |
+          terraform destroy -var="env_tag=${{ steps.extract_branch.outputs.branch }}" \
+            -var="key_vault_name=$KEY_VAULT_NAME" \
+            -var="key_vault_rg=$RESOURCE_GROUP" \
+            -var="alert_email=$ALERT_EMAIL" \
+            -var="webhook_url=$WEBHOOK_URL" \
+            -var="alert_sms=$ALERT_SMS" \
+            -var="clouflare_api_token=$CLOUDFLARE_TOKEN" \
+            -var="cloudflare_zone_id=$CLOUDFLARE_ZONE_ID" \
+            -var="domain_name=$DOMAIN_NAME" \
+            -auto-approve

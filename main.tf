@@ -30,14 +30,6 @@ data "azurerm_key_vault" "key_vault" {
   resource_group_name = var.key_vault_rg
 }
 
-data "cloudflare_zone" "domain" {
-  count = var.env_tag == "prod" ? 1 : 0
-  filter {
-    name = "${var.sld_name}.${var.tld_name}"
-  }
-}
-
-
 resource "random_string" "build_id" {
   length  = 10
   upper   = false
@@ -99,10 +91,10 @@ resource "azurerm_storage_account" "storage" {
   }
 }
 
-# CloudFlare DNS records pointing to Azure Storage
+### CloudFlare DNS records pointing to Azure Storage
 resource "cloudflare_dns_record" "root_a" {
   count   = var.env_tag == "prod" ? 1 : 0
-  zone_id = data.cloudflare_zone.domain[count.index].id
+  zone_id = var.cloudflare_zone_id
   name    = "@"
   content = "192.0.2.1"
   type    = "A"
@@ -113,7 +105,7 @@ resource "cloudflare_dns_record" "root_a" {
 
 resource "cloudflare_dns_record" "www_cname" {
   count   = var.env_tag == "prod" ? 1 : 0
-  zone_id = data.cloudflare_zone.domain[count.index].id
+  zone_id = var.cloudflare_zone_id
   name    = "www"
   content = azurerm_storage_account.storage.primary_web_host
   type    = "CNAME"
@@ -124,20 +116,20 @@ resource "cloudflare_dns_record" "www_cname" {
 
 resource "cloudflare_ruleset" "apex_redirect" {
   count   = var.env_tag == "prod" ? 1 : 0
-  zone_id = data.cloudflare_zone.domain[count.index].id
+  zone_id = var.cloudflare_zone_id
   kind    = "zone"
   name    = "apex redirect"
   phase   = "http_request_dynamic_redirect"
   rules {
     action      = "redirect"
-    expression  = "(lower(http.host) eq \"${var.sld_name}.${var.tld_name}\")"
+    expression  = "(lower(http.host) eq \"${var.domain_name}\")"
     description = "Redirect apex domain to www subdomain"
     enabled     = true
     action_parameters {
       from_value {
         status_code = 301
         target_url {
-          expression = "concat(\"https://\",\"www.${var.sld_name}.${var.tld_name}\",http.request.uri.path)"
+          expression = "concat(\"https://\",\"www.${var.domain_name}\",http.request.uri.path)"
         }
       }
     }
@@ -278,7 +270,7 @@ resource "azurerm_linux_function_app" "linux_function_app" {
       python_version = "3.12"
     }
     cors {
-      allowed_origins = ["https://portal.azure.com", "https://www.${var.sld_name}.${var.tld_name}"]
+      allowed_origins = ["https://portal.azure.com", "https://www.${var.domain_name}"]
     }
   }
   zip_deploy_file = data.archive_file.function.output_path

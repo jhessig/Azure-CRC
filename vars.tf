@@ -1,9 +1,5 @@
-variable "tld_name" {
-  default = "cloud"
-}
-
-variable "sld_name" {
-  default = "hessig"
+variable "domain_name" {
+  description = "Domain name for project"
 }
 
 variable "resource_group_name" {
@@ -40,6 +36,12 @@ variable "alert_sms" {
 
 variable "cloudflare_api_token" {
   description = "CloudFlare API token for authentication"
+  type        = string
+  sensitive   = true
+}
+
+variable "cloudflare_zone_id" {
+  description = "CloudFlare domain zone ID"
   type        = string
   sensitive   = true
 }
