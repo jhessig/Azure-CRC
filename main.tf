@@ -32,7 +32,9 @@ data "azurerm_key_vault" "key_vault" {
 
 data "cloudflare_zone" "domain" {
   count = var.env_tag == "prod" ? 1 : 0
-  name  = "${var.sld_name}.${var.tld_name}"
+  filter {
+    name = "${var.sld_name}.${var.tld_name}"
+  }
 }
 
 
@@ -98,24 +100,24 @@ resource "azurerm_storage_account" "storage" {
 }
 
 # CloudFlare DNS records pointing to Azure Storage
-resource "cloudflare_record" "root_a" {
+resource "cloudflare_dns_record" "root_a" {
   count   = var.env_tag == "prod" ? 1 : 0
   zone_id = data.cloudflare_zone.domain[count.index].id
   name    = "@"
   content = "192.0.2.1"
   type    = "A"
-  proxied = true  # Enable CloudFlare proxy (CDN)
-  ttl     = 1     # Auto TTL when proxied
+  proxied = true # Enable CloudFlare proxy (CDN)
+  ttl     = 1    # Auto TTL when proxied
   comment = "Root domain A record"
 }
 
-resource "cloudflare_record" "www_cname" {
+resource "cloudflare_dns_record" "www_cname" {
   count   = var.env_tag == "prod" ? 1 : 0
   zone_id = data.cloudflare_zone.domain[count.index].id
   name    = "www"
   content = azurerm_storage_account.storage.primary_web_host
   type    = "CNAME"
-  ttl = 60
+  ttl     = 60
   proxied = false #Enable after setting custom domain in storage account
   comment = "WWW subdomain pointing to Azure Storage via CloudFlare CDN"
 }
@@ -123,14 +125,14 @@ resource "cloudflare_record" "www_cname" {
 resource "cloudflare_ruleset" "apex_redirect" {
   count   = var.env_tag == "prod" ? 1 : 0
   zone_id = data.cloudflare_zone.domain[count.index].id
-  kind  = "zone"
-  name  = "apex redirect"
-  phase = "http_request_dynamic_redirect"
+  kind    = "zone"
+  name    = "apex redirect"
+  phase   = "http_request_dynamic_redirect"
   rules {
-    action = "redirect"
-    expression = "(lower(http.host) eq \"${var.sld_name}.${var.tld_name}\")"
+    action      = "redirect"
+    expression  = "(lower(http.host) eq \"${var.sld_name}.${var.tld_name}\")"
     description = "Redirect apex domain to www subdomain"
-    enabled = true
+    enabled     = true
     action_parameters {
       from_value {
         status_code = 301
