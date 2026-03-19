@@ -84,12 +84,27 @@ resource "cloudflare_dns_record" "www_cname" {
 
 ### Set up API.
 
+# Virtual network for private endpoints
+resource "azurerm_virtual_network" "vnet" {
+  name                = "${var.resource_group_name}-vnet"
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+# Subnet for private endpoints
+resource "azurerm_subnet" "pe_subnet" {
+  name                 = "private-endpoints"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.vnet.name
+  address_prefixes     = ["10.0.1.0/24"]
+}
+
 resource "azurerm_cosmosdb_account" "cosmosdb" {
   #checkov:skip=CKV_AZURE_99: "Ensure Cosmos DB accounts have restricted access" Review access restrictions TODO
   #checkov:skip=CKV_AZURE_100:Accepting default key management.
   #checkov:skip=CKV_AZURE_101: "Ensure that Azure Cosmos DB disables public network access" Review public access. TODO
   #checkov:skip=CKV_AZURE_140:Local authentication can only be disabled when using the SQL API.
-
   location                           = azurerm_resource_group.rg.location
   name                               = "${var.resource_group_name}-cosmos-${var.env_tag}-${random_string.build_id.result}"
   offer_type                         = "Standard"
