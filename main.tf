@@ -92,12 +92,25 @@ resource "azurerm_virtual_network" "vnet" {
   resource_group_name = azurerm_resource_group.rg.name
 }
 
+# Network Security Group for private endpoints subnet
+resource "azurerm_network_security_group" "pe_nsg" {
+  name                = "${var.resource_group_name}-pe-nsg"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
 # Subnet for private endpoints
 resource "azurerm_subnet" "pe_subnet" {
   name                 = "private-endpoints"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
+}
+
+# Associate NSG with subnet
+resource "azurerm_subnet_network_security_group_association" "pe_subnet_nsg" {
+  subnet_id                 = azurerm_subnet.pe_subnet.id
+  network_security_group_id = azurerm_network_security_group.pe_nsg.id
 }
 
 resource "azurerm_cosmosdb_account" "cosmosdb" {
