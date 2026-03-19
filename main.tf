@@ -1,35 +1,3 @@
-terraform {
-  backend "azurerm" {}
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.107.0"
-    }
-    cloudflare = {
-      source  = "cloudflare/cloudflare"
-      version = "~> 5"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "3.4.3"
-    }
-  }
-  required_version = ">= 1.1.0"
-}
-
-provider "azurerm" {
-  features {}
-}
-
-provider "cloudflare" {
-  api_token = var.cloudflare_api_token
-}
-
-data "azurerm_key_vault" "key_vault" {
-  name                = var.key_vault_name
-  resource_group_name = var.key_vault_rg
-}
-
 resource "random_string" "build_id" {
   length  = 10
   upper   = false
@@ -216,12 +184,6 @@ resource "azurerm_service_plan" "service_plan" {
   sku_name            = "Y1"
 }
 
-data "archive_file" "function" {
-  type        = "zip"
-  source_dir  = "${path.module}/function-app/"
-  output_path = "${path.module}/functions.zip"
-}
-
 resource "azurerm_linux_function_app" "linux_function_app" {
   #checkov:skip=CKV_AZURE_221: "Ensure that Azure Function App public network access is disabled" Review public access TODO
   name                          = "${var.resource_group_name}-${var.env_tag}-function-${random_string.build_id.result}"
@@ -367,18 +329,4 @@ resource "azurerm_key_vault_secret" "api_url" {
   key_vault_id    = data.azurerm_key_vault.key_vault.id
   content_type    = "text/plain"
   expiration_date = "2026-12-31T00:00:01Z"
-}
-
-output "storage_url" {
-  value     = "https://${azurerm_storage_account.storage.primary_web_host}"
-  sensitive = true
-}
-
-output "api_url" {
-  value     = "https://${azurerm_linux_function_app.linux_function_app.name}.azurewebsites.net/api/visitor_count"
-  sensitive = true
-}
-
-output "env_tag" {
-  value = var.env_tag
 }
