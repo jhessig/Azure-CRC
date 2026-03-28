@@ -196,7 +196,6 @@ resource "azurerm_storage_account_network_rules" "example" {
   storage_account_id = azurerm_storage_account.api_storage.id
 
   default_action             = "Deny"
-  ip_rules                   = var.github_actions_ips
   virtual_network_subnet_ids = [azurerm_subnet.api_subnet.id]
   bypass                     = ["AzureServices"]
 }
