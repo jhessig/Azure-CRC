@@ -194,11 +194,11 @@ resource "azurerm_storage_account" "api_storage" {
 }
 
 resource "azurerm_storage_account_network_rules" "example" {
-  storage_account_id = azurerm_storage_account.api_storage.id
+  storage_account_id         = azurerm_storage_account.api_storage.id
   default_action             = "Deny"
   virtual_network_subnet_ids = [azurerm_subnet.api_subnet.id]
   bypass                     = ["AzureServices"]
-  depends_on = [azurerm_linux_function_app.linux_function_app]
+  depends_on                 = [azurerm_linux_function_app.linux_function_app]
 }
 
 resource "azurerm_service_plan" "service_plan" {
