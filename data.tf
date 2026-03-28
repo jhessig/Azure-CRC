@@ -8,3 +8,7 @@ data "archive_file" "function" {
   source_dir  = "${path.module}/function-app/"
   output_path = "${path.module}/functions.zip"
 }
+
+data "http" "github_meta" {
+  url = "https://api.github.com/meta"
+}

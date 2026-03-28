@@ -86,38 +86,38 @@ resource "cloudflare_dns_record" "www_cname" {
 
 # Virtual network for private endpoints
 resource "azurerm_virtual_network" "vnet" {
-  name                = "${var.resource_group_name}-vnet"
+  name                = "${var.resource_group_name}-${var.env_tag}-vnet"
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 }
 
 # Network Security Group for private endpoints subnet
-resource "azurerm_network_security_group" "pe_nsg" {
-  name                = "${var.resource_group_name}-pe-nsg"
+resource "azurerm_network_security_group" "api_nsg" {
+  name                = "${var.resource_group_name}-${var.env_tag}-pe-nsg"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 }
 
 # Subnet for private endpoints
-resource "azurerm_subnet" "pe_subnet" {
-  name                 = "private-endpoints"
+resource "azurerm_subnet" "api_subnet" {
+  name                 = "${var.resource_group_name}-${var.env_tag}-private-endpoints"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.vnet.name
   address_prefixes     = ["10.0.1.0/24"]
 }
 
 # Associate NSG with subnet
-resource "azurerm_subnet_network_security_group_association" "pe_subnet_nsg" {
-  subnet_id                 = azurerm_subnet.pe_subnet.id
-  network_security_group_id = azurerm_network_security_group.pe_nsg.id
+resource "azurerm_subnet_network_security_group_association" "api_subnet_nsg" {
+  subnet_id                 = azurerm_subnet.api_subnet.id
+  network_security_group_id = azurerm_network_security_group.api_nsg.id
 }
 
 resource "azurerm_cosmosdb_account" "cosmosdb" {
-  #checkov:skip=CKV_AZURE_99: "Ensure Cosmos DB accounts have restricted access" Review access restrictions TODO
-  #checkov:skip=CKV_AZURE_100:Accepting default key management.
-  #checkov:skip=CKV_AZURE_101: "Ensure that Azure Cosmos DB disables public network access" Review public access. TODO
-  #checkov:skip=CKV_AZURE_140:Local authentication can only be disabled when using the SQL API.
+  #checkov:skip=CKV_AZURE_99: Disabling public network access breaks function app access under consumption plan.
+  #checkov:skip=CKV_AZURE_100: Accepting default key management.
+  #checkov:skip=CKV_AZURE_101: Disabling public network access breaks function app access under consumption plan.
+  #checkov:skip=CKV_AZURE_140: Local authentication can only be disabled when using the SQL API.
   location                           = azurerm_resource_group.rg.location
   name                               = "${var.resource_group_name}-cosmos-${var.env_tag}-${random_string.build_id.result}"
   offer_type                         = "Standard"
@@ -148,19 +148,17 @@ resource "azurerm_cosmosdb_table" "cosmosdb_table" {
 
 resource "azurerm_storage_account" "api_storage" {
   #checkov:skip=CKV2_AZURE_1:Accepting default key management.
-  #checkov:skip=CKV2_AZURE_33:Delaying private endpoint setup. TODO
+  #checkov:skip=CKV2_AZURE_33: Private Endpoint adds costs to project.
   #checkov:skip=CKV2_AZURE_40:Cannot disable shared access key.
   #checkov:skip=CKV2_AZURE_41: "Ensure storage account is configured with SAS expiration policy" Review feasiblity TODO
-  #checkov:skip=CKV2_AZURE_47: "Ensure storage account is configured without blob anonymous access" Review TODO
-  #checkov:skip=CKV_AZURE_59: "Ensure that Storage accounts disallow public access" Review public access TODO
-  #checkov:skip=CKV_AZURE_190: "Ensure that Storage blobs restrict public access" Review public access TODO
+  #checkov:skip=CKV_AZURE_59: Disabling public network access breaks function app access under consumption plan.
   account_replication_type = "GRS"
   account_tier             = "Standard"
   location                 = azurerm_resource_group.rg.location
   name                     = "${var.resource_group_name}apistorage${random_string.build_id.result}"
   resource_group_name      = azurerm_resource_group.rg.name
   min_tls_version          = "TLS1_2"
-  //allow_nested_items_to_be_public = false
+  allow_nested_items_to_be_public = false
   //public_network_access_enabled   = false
   //shared_access_key_enabled       = true
   blob_properties {
@@ -195,6 +193,15 @@ resource "azurerm_storage_account" "api_storage" {
   }
 }
 
+resource "azurerm_storage_account_network_rules" "example" {
+  storage_account_id = azurerm_storage_account.api_storage.id
+
+  default_action             = "Deny"
+  ip_rules                   = concat(local.github_actions_cidrs)
+  virtual_network_subnet_ids = [azurerm_subnet.api_subnet.id]
+  bypass                     = ["AzureServices"]
+}
+
 resource "azurerm_service_plan" "service_plan" {
   #checkov:skip=CKV_AZURE_212:Scaling requires support request.
   #checkov:skip=CKV_AZURE_225:Zone redundancy requires premium account.
@@ -206,7 +213,7 @@ resource "azurerm_service_plan" "service_plan" {
 }
 
 resource "azurerm_linux_function_app" "linux_function_app" {
-  #checkov:skip=CKV_AZURE_221: "Ensure that Azure Function App public network access is disabled" Review public access TODO
+  #checkov:skip=CKV_AZURE_221: Consumption plan restricts networking options to IP restrictions.
   name                          = "${var.resource_group_name}-${var.env_tag}-function-${random_string.build_id.result}"
   resource_group_name           = azurerm_resource_group.rg.name
   location                      = azurerm_resource_group.rg.location
