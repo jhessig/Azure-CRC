@@ -31,6 +31,15 @@ jobs:
       - name: 'Checkout'
         uses: actions/checkout@v4
 
+      - name: "Fetch and filter GitHub Actions IPs"
+        run: |
+          GITHUB_IPS=$(curl -s https://api.github.com/meta | jq -r '.actions[] |
+            select(test("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}/[0-9]{1,2}$")) |
+            split("/") |
+            if (.[1] | tonumber) > 30 then .[0] + "/30" else . | join("/") end' |
+            jq -Rsc 'split("\n") | map(select(length > 0)) | tojson')
+          echo "GITHUB_IPS=$GITHUB_IPS" >> $GITHUB_ENV
+
       - name: 'Setup Terraform'
         uses: hashicorp/setup-terraform@v1
 
@@ -54,7 +63,8 @@ jobs:
             -var="alert_sms=$ALERT_SMS" \
             -var="cloudflare_api_token=$CLOUDFLARE_TOKEN" \
             -var="cloudflare_zone_id=$CLOUDFLARE_ZONE_ID" \
-            -var="domain_name=$DOMAIN_NAME"
+            -var="domain_name=$DOMAIN_NAME" \
+            -var="github_actions_ips=$GITHUB_IPS"
 
       - name: Terraform Apply
         #if: github.ref == 'refs/heads/"master"' && github.event_name == 'push'
@@ -68,6 +78,7 @@ jobs:
             -var="cloudflare_api_token=$CLOUDFLARE_TOKEN" \
             -var="cloudflare_zone_id=$CLOUDFLARE_ZONE_ID" \
             -var="domain_name=$DOMAIN_NAME" \
+            -var="github_actions_ips=$GITHUB_IPS" \
             -auto-approve -input=false
 
       - name: "Checkout"

@@ -45,3 +45,8 @@ variable "cloudflare_zone_id" {
   type        = string
   sensitive   = true
 }
+
+variable "github_actions_ips" {
+  description = "Filtered GitHub Actions IP addresses (CIDR /0-/30 only)"
+  type        = list(string)
+}
