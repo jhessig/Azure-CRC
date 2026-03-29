@@ -14,13 +14,13 @@ resource "azurerm_resource_group" "rg" {
 
 ### Manually set custom domain in storage account
 resource "azurerm_storage_account" "storage" {
-  #checkov:skip=CKV2_AZURE_1:The storage account is a public static content host.
-  #checkov:skip=CKV2_AZURE_33:The storage account is a public static content host.
-  #checkov:skip=CKV2_AZURE_40:The storage account is a public static content host.
-  #checkov:skip=CKV2_AZURE_41:The storage account is a public static content host.
-  #checkov:skip=CKV2_AZURE_47:The storage account is a public static content host.
-  #checkov:skip=CKV_AZURE_59:The storage account is a public static content host.
-  #checkov:skip=CKV_AZURE_190:The storage account is a public static content host.
+  #checkov:skip=CKV2_AZURE_1: The storage account is a public static content host.
+  #checkov:skip=CKV2_AZURE_33: The storage account is a public static content host.
+  #checkov:skip=CKV2_AZURE_40: The storage account is a public static content host.
+  #checkov:skip=CKV2_AZURE_41: The storage account is a public static content host.
+  #checkov:skip=CKV2_AZURE_47: The storage account is a public static content host.
+  #checkov:skip=CKV_AZURE_59: The storage account is a public static content host.
+  #checkov:skip=CKV_AZURE_190: The storage account is a public static content host.
   account_replication_type = "GRS"
   account_tier             = "Standard"
   location                 = azurerm_resource_group.rg.location
@@ -83,24 +83,15 @@ resource "cloudflare_dns_record" "www_cname" {
 }
 
 ### Set up API.
-resource "azurerm_resource_group" "api_rg" {
-  name     = "${var.resource_group_name}-${var.env_tag}-apirg-${random_string.build_id.result}"
-  location = var.azure_region
-  tags = {
-    environment = var.env_tag
-  }
-}
-
 resource "azurerm_cosmosdb_account" "cosmosdb" {
-  #checkov:skip=CKV_AZURE_99: "Ensure Cosmos DB accounts have restricted access" Review access restrictions TODO
-  #checkov:skip=CKV_AZURE_100:Accepting default key management.
-  #checkov:skip=CKV_AZURE_101: "Ensure that Azure Cosmos DB disables public network access" Review public access. TODO
-  #checkov:skip=CKV_AZURE_140:Local authentication can only be disabled when using the SQL API.
-
-  location                           = azurerm_resource_group.api_rg.location
+  #checkov:skip=CKV_AZURE_99: Disabling public network access breaks function app access under consumption plan.
+  #checkov:skip=CKV_AZURE_100: Accepting default key management.
+  #checkov:skip=CKV_AZURE_101: Disabling public network access breaks function app access under consumption plan.
+  #checkov:skip=CKV_AZURE_140: Local authentication can only be disabled when using the SQL API.
+  location                           = azurerm_resource_group.rg.location
   name                               = "${var.resource_group_name}-cosmos-${var.env_tag}-${random_string.build_id.result}"
   offer_type                         = "Standard"
-  resource_group_name                = azurerm_resource_group.api_rg.name
+  resource_group_name                = azurerm_resource_group.rg.name
   kind                               = "GlobalDocumentDB"
   public_network_access_enabled      = true
   access_key_metadata_writes_enabled = false
@@ -121,36 +112,29 @@ resource "azurerm_cosmosdb_account" "cosmosdb" {
 
 resource "azurerm_cosmosdb_table" "cosmosdb_table" {
   name                = "functions-cosmos-table"
-  resource_group_name = azurerm_resource_group.api_rg.name
+  resource_group_name = azurerm_resource_group.rg.name
   account_name        = azurerm_cosmosdb_account.cosmosdb.name
 }
 
 resource "azurerm_storage_account" "api_storage" {
-  #checkov:skip=CKV2_AZURE_1:Accepting default key management.
-  #checkov:skip=CKV2_AZURE_33:Delaying private endpoint setup. TODO
-  #checkov:skip=CKV2_AZURE_40:Cannot disable shared access key.
-  #checkov:skip=CKV2_AZURE_41: "Ensure storage account is configured with SAS expiration policy" Review feasiblity TODO
-  #checkov:skip=CKV2_AZURE_47: "Ensure storage account is configured without blob anonymous access" Review TODO
-  #checkov:skip=CKV_AZURE_59: "Ensure that Storage accounts disallow public access" Review public access TODO
-  #checkov:skip=CKV_AZURE_190: "Ensure that Storage blobs restrict public access" Review public access TODO
+  #checkov:skip=CKV2_AZURE_1: Accepting default key management.
+  #checkov:skip=CKV2_AZURE_33: Private Endpoint adds costs to project.
+  #checkov:skip=CKV2_AZURE_40: Cannot disable shared access key.
+  #checkov:skip=CKV2_AZURE_41: SAS policy breaks function app access on consumption plan
+  #checkov:skip=CKV2_AZURE_47: Disabling public network access breaks unction app access under consumption plan.
+  #checkov:skip=CKV_AZURE_59: Disabling public network access breaks function app access under consumption plan.
+  #checkov:skip=CKV_AZURE_190: Disabling public network access breaks function app access under consumption plan.
   account_replication_type = "GRS"
   account_tier             = "Standard"
-  location                 = azurerm_resource_group.api_rg.location
+  location                 = azurerm_resource_group.rg.location
   name                     = "${var.resource_group_name}apistorage${random_string.build_id.result}"
-  resource_group_name      = azurerm_resource_group.api_rg.name
+  resource_group_name      = azurerm_resource_group.rg.name
   min_tls_version          = "TLS1_2"
-  //allow_nested_items_to_be_public = false
-  //public_network_access_enabled   = false
-  //shared_access_key_enabled       = true
   blob_properties {
     delete_retention_policy {
       days = 7
     }
   }
-  //sas_policy {
-  //  expiration_period = "90.00:00:00"
-  //  expiration_action = "Log"
-  //}
   queue_properties {
     logging {
       delete                = true
@@ -178,17 +162,18 @@ resource "azurerm_service_plan" "service_plan" {
   #checkov:skip=CKV_AZURE_212:Scaling requires support request.
   #checkov:skip=CKV_AZURE_225:Zone redundancy requires premium account.
   name                = "azure-functions-${var.resource_group_name}-${var.env_tag}"
-  resource_group_name = azurerm_resource_group.api_rg.name
-  location            = azurerm_resource_group.api_rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
   os_type             = "Linux"
   sku_name            = "Y1"
 }
 
+### Linux Consumption reaches EOL on 9/20/2028. Migrate to Flex Consumption.
 resource "azurerm_linux_function_app" "linux_function_app" {
-  #checkov:skip=CKV_AZURE_221: "Ensure that Azure Function App public network access is disabled" Review public access TODO
+  #checkov:skip=CKV_AZURE_221: Consumption plan restricts networking options to IP restrictions.
   name                          = "${var.resource_group_name}-${var.env_tag}-function-${random_string.build_id.result}"
-  resource_group_name           = azurerm_resource_group.api_rg.name
-  location                      = azurerm_resource_group.api_rg.location
+  resource_group_name           = azurerm_resource_group.rg.name
+  location                      = azurerm_resource_group.rg.location
   storage_account_name          = azurerm_storage_account.api_storage.name
   storage_account_access_key    = azurerm_storage_account.api_storage.primary_access_key
   service_plan_id               = azurerm_service_plan.service_plan.id
@@ -219,7 +204,7 @@ resource "azurerm_linux_function_app" "linux_function_app" {
 ### Monitoring
 resource "azurerm_monitor_action_group" "api_group" {
   name                = "${var.resource_group_name}-${var.env_tag}-actiongroup"
-  resource_group_name = azurerm_resource_group.api_rg.name
+  resource_group_name = azurerm_resource_group.rg.name
   short_name          = "crcalerts"
   email_receiver {
     name          = "admin"
@@ -239,7 +224,7 @@ resource "azurerm_monitor_action_group" "api_group" {
 
 resource "azurerm_monitor_metric_alert" "function_failures" {
   name                = "${var.resource_group_name}-${var.env_tag}-function-failures"
-  resource_group_name = azurerm_resource_group.api_rg.name
+  resource_group_name = azurerm_resource_group.rg.name
   scopes              = [azurerm_linux_function_app.linux_function_app.id]
   description         = "Alert when function invocations fail"
   criteria {
@@ -263,7 +248,7 @@ resource "azurerm_monitor_metric_alert" "function_failures" {
 
 resource "azurerm_monitor_metric_alert" "high_latency" {
   name                = "${var.resource_group_name}-${var.env_tag}-high-latency"
-  resource_group_name = azurerm_resource_group.api_rg.name
+  resource_group_name = azurerm_resource_group.rg.name
   scopes              = [azurerm_linux_function_app.linux_function_app.id]
   description         = "Alert when function response time is high"
   criteria {
@@ -282,7 +267,7 @@ resource "azurerm_monitor_metric_alert" "high_latency" {
 
 resource "azurerm_monitor_metric_alert" "high_request_volume" {
   name                = "${var.resource_group_name}-${var.env_tag}-high-volume"
-  resource_group_name = azurerm_resource_group.api_rg.name
+  resource_group_name = azurerm_resource_group.rg.name
   scopes              = [azurerm_linux_function_app.linux_function_app.id]
   description         = "Alert on unusually high request volume"
   criteria {
