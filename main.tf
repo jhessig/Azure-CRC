@@ -197,6 +197,7 @@ resource "azurerm_storage_account_network_rules" "example" {
   storage_account_id         = azurerm_storage_account.api_storage.id
   default_action             = "Deny"
   virtual_network_subnet_ids = [azurerm_subnet.api_subnet.id]
+  ip_rules                   = azurerm_linux_function_app.linux_function_app.possible_outbound_ip_address_list
   bypass                     = ["AzureServices"]
   depends_on                 = [azurerm_linux_function_app.linux_function_app]
 }
@@ -211,6 +212,7 @@ resource "azurerm_service_plan" "service_plan" {
   sku_name            = "Y1"
 }
 
+### Linux Function App goes EOL on 9/20/2028. Migrate to Flex Consumption.
 resource "azurerm_linux_function_app" "linux_function_app" {
   #checkov:skip=CKV_AZURE_221: Consumption plan restricts networking options to IP restrictions.
   name                          = "${var.resource_group_name}-${var.env_tag}-function-${random_string.build_id.result}"
